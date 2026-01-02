@@ -9,6 +9,9 @@ export class WorkTimer {
   private startTime: number | null = null;
   private statusBarItem: vscode.StatusBarItem;
   private statusBarUpdateInterval: NodeJS.Timeout | null = null;
+  private lastActivityTime: number | null = null; // 最後のアクティビティ時刻（非アクティブセッション監視用）
+  private inactivityCheckInterval: NodeJS.Timeout | null = null; // 非アクティブセッション監視用のインターバル
+  private readonly INACTIVITY_TIMEOUT = 3600; // 1時間（秒）
 
   constructor() {
     // ステータスバーアイテムを作成
@@ -32,7 +35,9 @@ export class WorkTimer {
       if (activeSession) {
         this.currentSessionId = activeSession.id;
         this.startTime = activeSession.start_time;
+        this.lastActivityTime = Math.floor(Date.now() / 1000);
         this.updateStatusBar();
+        this.startInactivityCheck();
         console.log('[Tsumiki] Active session restored:', activeSession.id);
       }
     } catch (error) {
@@ -54,7 +59,9 @@ export class WorkTimer {
 
     try {
       this.currentSessionId = createSession(now);
+      this.lastActivityTime = now;
       this.updateStatusBar();
+      this.startInactivityCheck();
       vscode.window.showInformationMessage('作業時間計測を開始しました');
       console.log('[Tsumiki] Timer started, session ID:', this.currentSessionId);
     } catch (error) {
@@ -90,6 +97,8 @@ export class WorkTimer {
     } finally {
       this.currentSessionId = null;
       this.startTime = null;
+      this.lastActivityTime = null;
+      this.stopInactivityCheck();
       this.updateStatusBar();
     }
   }
@@ -102,6 +111,30 @@ export class WorkTimer {
       this.stop();
     } else {
       this.start();
+    }
+  }
+
+  /**
+   * 既存のセッションを設定（外部から呼び出し可能）
+   * ファイル保存時に自動的にセッションが作成された場合に使用
+   */
+  public setSession(sessionId: number, startTime: number): void {
+    this.currentSessionId = sessionId;
+    this.startTime = startTime;
+    this.lastActivityTime = Math.floor(Date.now() / 1000);
+    this.updateStatusBar();
+    this.startInactivityCheck();
+    console.log('[Tsumiki] Session set in timer:', sessionId);
+  }
+
+  /**
+   * 最後のアクティビティ時刻を更新
+   * ファイル保存時に呼び出される
+   */
+  public updateLastActivity(): void {
+    if (this.isRunning()) {
+      this.lastActivityTime = Math.floor(Date.now() / 1000);
+      console.log('[Tsumiki] Last activity updated:', this.lastActivityTime);
     }
   }
 
@@ -165,6 +198,61 @@ export class WorkTimer {
   }
 
   /**
+   * 非アクティブセッション監視を開始
+   */
+  private startInactivityCheck(): void {
+    // 既存のインターバルがある場合はクリア
+    if (this.inactivityCheckInterval) {
+      clearInterval(this.inactivityCheckInterval);
+    }
+    
+    // 5分ごとにチェック
+    this.inactivityCheckInterval = setInterval(() => {
+      this.checkInactiveSession();
+    }, 5 * 60 * 1000); // 5分
+  }
+
+  /**
+   * 非アクティブセッション監視を停止
+   */
+  private stopInactivityCheck(): void {
+    if (this.inactivityCheckInterval) {
+      clearInterval(this.inactivityCheckInterval);
+      this.inactivityCheckInterval = null;
+    }
+  }
+
+  /**
+   * 非アクティブセッションをチェックし、必要に応じて自動終了
+   */
+  private checkInactiveSession(): void {
+    if (!this.isRunning() || !this.currentSessionId || !this.startTime || !this.lastActivityTime) {
+      return;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const inactiveDuration = now - this.lastActivityTime;
+
+    if (inactiveDuration >= this.INACTIVITY_TIMEOUT) {
+      console.log('[Tsumiki] Session inactive for', inactiveDuration, 'seconds, auto-terminating');
+      const sessionDuration = now - this.startTime;
+      
+      try {
+        updateSession(this.currentSessionId, now, sessionDuration);
+        console.log('[Tsumiki] Session auto-terminated, duration:', sessionDuration);
+      } catch (error) {
+        console.error('[Tsumiki] Failed to auto-terminate session:', error);
+      } finally {
+        this.currentSessionId = null;
+        this.startTime = null;
+        this.lastActivityTime = null;
+        this.stopInactivityCheck();
+        this.updateStatusBar();
+      }
+    }
+  }
+
+  /**
    * リソースを解放
    */
   public dispose(): void {
@@ -172,6 +260,7 @@ export class WorkTimer {
       clearInterval(this.statusBarUpdateInterval);
       this.statusBarUpdateInterval = null;
     }
+    this.stopInactivityCheck();
     this.statusBarItem.dispose();
   }
 }
