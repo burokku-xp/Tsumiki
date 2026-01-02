@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { initDatabase, initializeDatabase, closeDatabase } from './database';
+import { initDatabase, initializeDatabase, closeDatabase, deleteDailyStats, resetDailyData } from './database';
 import { TsumikiViewProvider } from './views/tsumikiView';
 import { SettingsViewProvider } from './views/settingsView';
 import { WorkTimer } from './measurement/timer';
@@ -178,10 +178,45 @@ export function activate(context: vscode.ExtensionContext) {
       const stopTimerCommand = vscode.commands.registerCommand('tsumiki.stopTimer', () => {
         if (workTimer) {
           workTimer.stop();
+          // 日次統計のキャッシュを無効化（最新データを反映するため）
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const today = `${year}-${month}-${day}`;
+          deleteDailyStats(today);
           refreshWebView();
         }
       });
       context.subscriptions.push(stopTimerCommand);
+
+      // 本日のデータをリセットするコマンド
+      const resetTodayCommand = vscode.commands.registerCommand('tsumiki.resetToday', async () => {
+        const confirm = await vscode.window.showWarningMessage(
+          '本日のデータをリセットしますか？この操作は取り消せません。',
+          { modal: true },
+          'リセット',
+          'キャンセル'
+        );
+        
+        if (confirm === 'リセット') {
+          try {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            
+            resetDailyData(today);
+            refreshWebView();
+            vscode.window.showInformationMessage('本日のデータをリセットしました。');
+          } catch (error) {
+            console.error('[Tsumiki] Failed to reset today data:', error);
+            vscode.window.showErrorMessage('データのリセットに失敗しました。');
+          }
+        }
+      });
+      context.subscriptions.push(resetTodayCommand);
 
       // Slack Webhook URL設定コマンド
       const setWebhookUrlCommand = vscode.commands.registerCommand('tsumiki.slack.setWebhookUrl', async () => {
@@ -307,6 +342,25 @@ export function activate(context: vscode.ExtensionContext) {
     // ステップ5: ファイル保存イベントを監視（計測機能統合）
     console.log('[Tsumiki] Step 5: Registering file save event listener...');
     try {
+      // ファイルが開かれた時に初期行数を記録
+      const openDisposable = vscode.workspace.onDidOpenTextDocument((document) => {
+        try {
+          // 行数を計算
+          let lineCount = 0;
+          if (lineCounter) {
+            lineCount = lineCounter.countLines(document);
+          }
+          
+          // 初期行数を記録
+          if (fileTracker) {
+            fileTracker.recordInitialLineCount(document, lineCount);
+          }
+        } catch (error) {
+          console.error('[Tsumiki] Failed to record initial line count:', error);
+        }
+      });
+      context.subscriptions.push(openDisposable);
+
       const disposable = vscode.workspace.onDidSaveTextDocument((document) => {
         try {
           // アクティブなセッションを取得
@@ -361,6 +415,14 @@ export function activate(context: vscode.ExtensionContext) {
           if (workTimer) {
             workTimer.updateLastActivity();
           }
+
+          // 日次統計のキャッシュを無効化（最新データを反映するため）
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const today = `${year}-${month}-${day}`;
+          deleteDailyStats(today);
 
           const filePath = document.uri.fsPath;
           console.log('[Tsumiki] File save tracked:', {

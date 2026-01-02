@@ -77,21 +77,7 @@ const App: React.FC = () => {
     );
   }
 
-  if (!data || (data.saveCount === 0 && data.workTime === 0)) {
-    return (
-      <div className="app">
-        <Header />
-        <TimerControl
-          isRunning={timerState.isRunning}
-          elapsedTime={timerState.elapsedTime}
-          onStateChange={(isRunning, elapsedTime) => {
-            setTimerState({ isRunning, elapsedTime });
-          }}
-        />
-        <div className="no-data">本日のデータはありません</div>
-      </div>
-    );
-  }
+  // データがない状態でも通常のUIを表示する（「本日のデータはありません」は表示しない）
 
   const displaySettings = data.displaySettings || {
     workTime: true,

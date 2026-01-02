@@ -133,16 +133,31 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
    * 設定をWebViewに送信
    */
   private async _sendSettings() {
+    // #region agent log
+    fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:135','message':'_sendSettings called',data:{hasView:!!this._view},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     if (!this._view) {
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:138','message':'_sendSettings: view is null',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       return;
     }
 
     try {
       const displaySettings = this._settingsManager.getDisplaySettings();
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:143','message':'Display settings retrieved',data:{displaySettings},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       const slackPostItems = this._settingsManager.getSlackPostItems();
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:146','message':'Slack post items retrieved',data:{slackPostItems},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       const webhookUrl = await getWebhookUrl(this._context);
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:149','message':'Webhook URL retrieved',data:{hasWebhookUrl:!!webhookUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
 
-      this._view.webview.postMessage({
+      const message = {
         command: 'updateSettings',
         data: {
           display: displaySettings,
@@ -151,8 +166,18 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
             webhookUrl: webhookUrl || '',
           },
         },
-      });
+      };
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:160','message':'Sending message to webview',data:{command:message.command},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      this._view.webview.postMessage(message);
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:162','message':'Message sent to webview',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:165','message':'Error in _sendSettings',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       console.error('Failed to send settings:', error);
     }
   }
@@ -174,7 +199,9 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
         try {
           const vscode = acquireVsCodeApi();
           window.vscode = vscode;
+          fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:175','message':'VSCode API acquired successfully',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
         } catch (error) {
+          fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'settingsView.ts:178','message':'Failed to acquire VSCode API',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
           console.error('Failed to acquire VSCode API:', error);
           window.vscode = {
             postMessage: function(message) {
