@@ -299,8 +299,9 @@ export function activate(context: vscode.ExtensionContext) {
           }
 
           // ファイル編集を追跡（行数と言語を含む）
+          // セッションIDを明示的に渡すことで、自動作成直後でも確実に記録される
           if (fileTracker && activeSession) {
-            fileTracker.trackFileEdit(document, lineCount, language);
+            fileTracker.trackFileEdit(document, lineCount, language, activeSession.id);
           }
 
           // 最後のアクティビティ時刻を更新（非アクティブセッション監視用）
