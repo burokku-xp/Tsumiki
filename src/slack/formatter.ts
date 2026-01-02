@@ -1,5 +1,6 @@
 import { getDailyStatsByDate, getFileEditsByDate, type LanguageRatio, type FileEdit } from '../database';
 import * as os from 'os';
+import { getSettingsManager, type SlackPostItem } from '../settings/config';
 
 /**
  * 作業時間をフォーマット（秒 → 時間分）
@@ -53,8 +54,13 @@ function formatFileList(fileEdits: Array<{ file_path: string; line_count: number
 
 /**
  * 日次サマリーをSlack形式でフォーマット
+ * @param date 日付（YYYY-MM-DD形式、デフォルトは今日）
+ * @param postItems 投稿に含める項目（指定がない場合は設定から取得）
  */
-export function formatDailySummaryForSlack(date: string = new Date().toISOString().split('T')[0]): string {
+export function formatDailySummaryForSlack(
+  date: string = new Date().toISOString().split('T')[0],
+  postItems?: SlackPostItem[]
+): string {
   // データベースから日次統計とファイル編集記録を取得（エラーハンドリング付き）
   let stats;
   let fileEdits: FileEdit[] = [];
@@ -89,6 +95,10 @@ export function formatDailySummaryForSlack(date: string = new Date().toISOString
     }, [] as Array<{ path: string; lineCount: number }>)
     .sort((a, b) => b.lineCount - a.lineCount);
 
+  // 投稿項目を取得（指定がない場合は設定から取得）
+  const settingsManager = getSettingsManager();
+  const selectedItems = postItems || settingsManager.getSlackPostItems();
+
   const userName = getUserName();
   const workTime = stats?.work_time || 0;
   const saveCount = stats?.save_count || 0;
@@ -101,22 +111,38 @@ export function formatDailySummaryForSlack(date: string = new Date().toISOString
   lines.push(`🧱 ${userName}さんの本日の記録`);
   lines.push('━━━━━━━━━━━━━━━━━━━━━');
   
-  if (workTime > 0) {
+  // 設定で選択された項目のみを追加
+  if (selectedItems.includes('workTime') && workTime > 0) {
     lines.push(`⏱️ 作業時間: ${formatWorkTime(workTime)}`);
   }
   
-  if (saveCount > 0 || fileCount > 0) {
-    lines.push(`💾 保存: ${saveCount}回 / ${fileCount}ファイル`);
+  if (selectedItems.includes('saveCount') || selectedItems.includes('fileCount')) {
+    const parts: string[] = [];
+    if (selectedItems.includes('saveCount') && saveCount > 0) {
+      parts.push(`${saveCount}回`);
+    }
+    if (selectedItems.includes('fileCount') && fileCount > 0) {
+      parts.push(`${fileCount}ファイル`);
+    }
+    if (parts.length > 0) {
+      lines.push(`💾 保存: ${parts.join(' / ')}`);
+    }
   }
   
-  if (lineChanges > 0) {
+  if (selectedItems.includes('lineChanges') && lineChanges > 0) {
     lines.push(`📝 変更行数: ${lineChanges}行`);
   }
   
-  if (fileList.length > 0) {
+  if (selectedItems.includes('fileList') && fileList.length > 0) {
     lines.push('');
     lines.push(`📁 編集ファイル:`);
     lines.push(`・${formattedFileList}`);
+  }
+
+  // 何も項目が選択されていない場合のメッセージ
+  if (lines.length === 2) {
+    // ヘッダーと区切り線のみの場合
+    lines.push('本日のデータはありません');
   }
 
   return lines.join('\n');
