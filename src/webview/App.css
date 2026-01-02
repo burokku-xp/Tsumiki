@@ -1,0 +1,277 @@
+:root {
+  --radius-md: 6px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  /* Use input background for cards to make them slightly distinct from sidebar bg */
+  --bg-card: var(--vscode-input-background);
+  --border-color: var(--vscode-widget-border);
+  --hover-bg: var(--vscode-list-hoverBackground);
+}
+
+body {
+  padding: 0;
+  margin: 0;
+}
+
+.app {
+  padding: var(--spacing-md);
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif);
+  color: var(--vscode-foreground);
+  box-sizing: border-box;
+}
+
+/* Header */
+.header {
+  margin-bottom: 24px;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header h1 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vscode-descriptionForeground);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Stats Section */
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background-color: var(--bg-card);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 12px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.2s ease;
+  min-width: 0; /* Flexbox overflow fix */
+}
+
+.stat-card:hover {
+  background-color: var(--hover-bg);
+  transform: translateY(-1px);
+}
+
+.stat-icon {
+  font-size: 18px;
+  margin-bottom: 6px;
+  opacity: 0.9;
+}
+
+.stat-label {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.stat-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  line-height: 1.2;
+  word-break: break-all;
+}
+
+/* Details Section */
+.details-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: 24px;
+}
+
+.detail-card {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.detail-icon {
+  font-size: 14px;
+}
+
+.detail-value {
+  font-size: 14px;
+  padding-left: 2px;
+  font-feature-settings: "tnum";
+}
+
+.reference-label {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: 6px;
+  font-weight: normal;
+}
+
+/* Language Ratios */
+.language-ratios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: var(--bg-card);
+  padding: 12px;
+  border-radius: var(--radius-md);
+}
+
+.language-ratio-item {
+  display: grid;
+  grid-template-columns: 80px 1fr 35px;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-name {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--vscode-foreground);
+}
+
+.language-progress {
+  height: 6px;
+  background-color: var(--vscode-widget-shadow);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.language-progress-bar {
+  height: 100%;
+  background-color: var(--vscode-progressBar-background);
+  border-radius: 3px;
+}
+
+.language-percent {
+  font-size: 11px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+/* File List Section */
+.file-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.file-list-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: 4px;
+}
+
+.file-list-icon {
+  font-size: 14px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.file-list-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.file-list {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.file-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vscode-widget-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: default;
+  transition: background-color 0.1s;
+}
+
+.file-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-path {
+  font-size: 12px;
+  font-family: var(--vscode-editor-font-family);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.9;
+}
+
+.file-lines {
+  font-size: 10px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  background-color: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+  min-width: 24px;
+  text-align: center;
+}
+
+.file-item-more {
+  padding: 10px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  background-color: rgba(0, 0, 0, 0.03);
+  font-style: italic;
+}
+
+.loading, .no-data {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  opacity: 0.8;
+}

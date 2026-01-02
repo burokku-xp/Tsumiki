@@ -144,6 +144,10 @@ export function getFileEditsBySession(sessionId: number): FileEdit[] {
  */
 export function getFileEditsByDateRange(startDate: number, endDate: number): FileEdit[] {
   const db = getDatabase();
+  if (!db) {
+    return [];
+  }
+  
   return db.prepare(`
     SELECT * FROM file_edits
     WHERE saved_at >= ? AND saved_at <= ?
@@ -156,6 +160,10 @@ export function getFileEditsByDateRange(startDate: number, endDate: number): Fil
  */
 export function getFileEditsByDate(date: string): FileEdit[] {
   const db = getDatabase();
+  if (!db) {
+    return [];
+  }
+  
   const startOfDay = new Date(date + 'T00:00:00').getTime() / 1000;
   const endOfDay = new Date(date + 'T23:59:59').getTime() / 1000;
   return getFileEditsByDateRange(startOfDay, endOfDay);
@@ -168,6 +176,21 @@ export function getFileEditsByDate(date: string): FileEdit[] {
  */
 export function calculateDailyStats(date: string): DailyStat {
   const db = getDatabase();
+  if (!db) {
+    // データベースが利用できない場合は空の統計を返す
+    return {
+      id: 0,
+      date,
+      work_time: 0,
+      save_count: 0,
+      file_count: 0,
+      line_changes: 0,
+      language_ratios: null,
+      created_at: Math.floor(Date.now() / 1000),
+      updated_at: Math.floor(Date.now() / 1000),
+    };
+  }
+  
   const startOfDay = new Date(date + 'T00:00:00').getTime() / 1000;
   const endOfDay = new Date(date + 'T23:59:59').getTime() / 1000;
 
@@ -256,6 +279,10 @@ export function saveDailyStats(stats: DailyStat): void {
  */
 export function getDailyStatsByDate(date: string): DailyStat | null {
   const db = getDatabase();
+  if (!db) {
+    return null;
+  }
+  
   const result = db.prepare('SELECT * FROM daily_stats WHERE date = ?').get(date) as DailyStat | null;
   
   if (result) {
@@ -263,10 +290,14 @@ export function getDailyStatsByDate(date: string): DailyStat | null {
   }
   
   // 存在しない場合は計算
-  const calculated = calculateDailyStats(date);
-  if (calculated.save_count > 0 || calculated.work_time > 0) {
-    saveDailyStats(calculated);
-    return getDailyStatsByDate(date);
+  try {
+    const calculated = calculateDailyStats(date);
+    if (calculated.save_count > 0 || calculated.work_time > 0) {
+      saveDailyStats(calculated);
+      return getDailyStatsByDate(date);
+    }
+  } catch (error) {
+    console.error('Failed to calculate daily stats:', error);
   }
   
   return null;
