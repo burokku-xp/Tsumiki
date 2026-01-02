@@ -71,8 +71,20 @@ export function activate(context: vscode.ExtensionContext) {
       // WebViewが登録できなくても拡張機能は動作する
     }
 
-    // ステップ3: ファイル保存イベントを監視
-    console.log('[Tsumiki] Step 3: Registering file save event listener...');
+    // ステップ3: 基本的なコマンドを登録
+    console.log('[Tsumiki] Step 3: Registering commands...');
+    try {
+      const helloWorldCommand = vscode.commands.registerCommand('tsumiki.helloWorld', () => {
+        vscode.window.showInformationMessage('Hello World from Tsumiki!');
+      });
+      context.subscriptions.push(helloWorldCommand);
+      console.log('[Tsumiki] Commands registered successfully');
+    } catch (error) {
+      activationError('command registration', error, true);
+    }
+
+    // ステップ4: ファイル保存イベントを監視
+    console.log('[Tsumiki] Step 4: Registering file save event listener...');
     try {
       const disposable = vscode.workspace.onDidSaveTextDocument(() => {
         try {
