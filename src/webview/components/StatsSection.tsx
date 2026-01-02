@@ -7,18 +7,27 @@ interface StatsSectionProps {
   workTime: number; // 秒単位
   saveCount: number;
   fileCount: number;
+  displaySettings: {
+    workTime: boolean;
+    saveCount: boolean;
+    fileCount: boolean;
+    lineChanges: boolean;
+    languageRatio: boolean;
+    fileList: boolean;
+  };
 }
 
 const StatsSection: React.FC<StatsSectionProps> = ({
   workTime,
   saveCount,
   fileCount,
+  displaySettings,
 }) => {
   return (
     <div className="stats-section">
-      <WorkTimeCard workTime={workTime} />
-      <SaveCountCard saveCount={saveCount} />
-      <FileCountCard fileCount={fileCount} />
+      {displaySettings.workTime && <WorkTimeCard workTime={workTime} />}
+      {displaySettings.saveCount && <SaveCountCard saveCount={saveCount} />}
+      {displaySettings.fileCount && <FileCountCard fileCount={fileCount} />}
     </div>
   );
 };

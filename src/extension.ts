@@ -220,5 +220,10 @@ export function deactivate() {
     workTimer.dispose();
   }
   
+  // WebViewプロバイダーを解放
+  if (viewProvider) {
+    viewProvider.dispose();
+  }
+  
   closeDatabase();
 }

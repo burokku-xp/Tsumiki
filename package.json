@@ -33,6 +33,64 @@
         "title": "作業時間計測を停止"
       }
     ],
+    "configuration": {
+      "title": "Tsumiki",
+      "properties": {
+        "tsumiki.display.workTime": {
+          "type": "boolean",
+          "default": true,
+          "description": "作業時間を表示する"
+        },
+        "tsumiki.display.saveCount": {
+          "type": "boolean",
+          "default": true,
+          "description": "保存回数を表示する"
+        },
+        "tsumiki.display.fileCount": {
+          "type": "boolean",
+          "default": true,
+          "description": "ファイル数を表示する"
+        },
+        "tsumiki.display.lineChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "変更行数を表示する"
+        },
+        "tsumiki.display.languageRatio": {
+          "type": "boolean",
+          "default": true,
+          "description": "言語比率を表示する"
+        },
+        "tsumiki.display.fileList": {
+          "type": "boolean",
+          "default": true,
+          "description": "編集ファイル一覧を表示する"
+        },
+        "tsumiki.slack.postItems": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "workTime",
+              "saveCount",
+              "fileCount",
+              "lineChanges",
+              "languageRatio",
+              "fileList"
+            ]
+          },
+          "default": [
+            "workTime",
+            "saveCount",
+            "fileCount",
+            "lineChanges",
+            "languageRatio",
+            "fileList"
+          ],
+          "description": "Slack投稿に含める項目を選択（複数選択可能）"
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {

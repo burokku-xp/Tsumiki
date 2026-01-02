@@ -15,6 +15,14 @@ export interface DailyData {
   fileList: Array<{ path: string; lineCount: number }>;
   hasMoreFiles: boolean;
   totalFiles: number;
+  displaySettings?: {
+    workTime: boolean;
+    saveCount: boolean;
+    fileCount: boolean;
+    lineChanges: boolean;
+    languageRatio: boolean;
+    fileList: boolean;
+  };
 }
 
 const App: React.FC = () => {
@@ -71,23 +79,42 @@ const App: React.FC = () => {
     );
   }
 
+  const displaySettings = data.displaySettings || {
+    workTime: true,
+    saveCount: true,
+    fileCount: true,
+    lineChanges: true,
+    languageRatio: true,
+    fileList: true,
+  };
+
   return (
     <div className="app">
       <Header />
-      <StatsSection
-        workTime={data.workTime}
-        saveCount={data.saveCount}
-        fileCount={data.fileCount}
-      />
-      <DetailsSection
-        lineChanges={data.lineChanges}
-        languageRatios={data.languageRatios}
-      />
-      <FileListSection
-        fileList={data.fileList}
-        hasMoreFiles={data.hasMoreFiles}
-        totalFiles={data.totalFiles}
-      />
+      {displaySettings.workTime ||
+      displaySettings.saveCount ||
+      displaySettings.fileCount ? (
+        <StatsSection
+          workTime={data.workTime}
+          saveCount={data.saveCount}
+          fileCount={data.fileCount}
+          displaySettings={displaySettings}
+        />
+      ) : null}
+      {displaySettings.lineChanges || displaySettings.languageRatio ? (
+        <DetailsSection
+          lineChanges={data.lineChanges}
+          languageRatios={data.languageRatios}
+          displaySettings={displaySettings}
+        />
+      ) : null}
+      {displaySettings.fileList ? (
+        <FileListSection
+          fileList={data.fileList}
+          hasMoreFiles={data.hasMoreFiles}
+          totalFiles={data.totalFiles}
+        />
+      ) : null}
     </div>
   );
 };

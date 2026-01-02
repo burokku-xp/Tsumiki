@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { getDailyStatsByDate, getFileEditsByDate, type LanguageRatio } from '../database';
 import { getDatabase } from '../database/db';
+import { getSettingsManager } from '../settings/config';
 
 /**
  * WebViewプロバイダー
@@ -9,8 +10,19 @@ import { getDatabase } from '../database/db';
 export class TsumikiViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'tsumikiView';
   private _view?: vscode.WebviewView;
+  private _settingsManager = getSettingsManager();
+  private _settingsChangeDisposable?: vscode.Disposable;
 
-  constructor(private readonly _extensionUri: vscode.Uri) {}
+  constructor(private readonly _extensionUri: vscode.Uri) {
+    // 設定変更を監視してリアルタイム反映
+    this._settingsChangeDisposable = this._settingsManager.onDidChange(() => {
+      this._sendDailyData();
+    });
+  }
+
+  dispose() {
+    this._settingsChangeDisposable?.dispose();
+  }
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -71,6 +83,7 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
     if (!dbAvailable) {
       // データベースが利用できない場合は空のデータを送信
       console.log('[Tsumiki] Database not available, sending empty data');
+      const displaySettings = this._settingsManager.getDisplaySettings();
       this._view.webview.postMessage({
         command: 'updateDailyData',
         data: {
@@ -82,6 +95,7 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
           fileList: [],
           hasMoreFiles: false,
           totalFiles: 0,
+          displaySettings,
         },
       });
       return;
@@ -143,6 +157,9 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
       .sort(([, a], [, b]) => b - a)
       .map(([lang, percent]) => ({ language: lang, percent }));
 
+      // 設定を取得
+      const displaySettings = this._settingsManager.getDisplaySettings();
+
       this._view.webview.postMessage({
         command: 'updateDailyData',
         data: {
@@ -154,11 +171,13 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
           fileList,
           hasMoreFiles,
           totalFiles,
+          displaySettings,
         },
       });
     } catch (error) {
       console.error('Failed to send daily data:', error);
       // エラーが発生した場合でも空のデータを送信してUIを更新
+      const displaySettings = this._settingsManager.getDisplaySettings();
       this._view.webview.postMessage({
         command: 'updateDailyData',
         data: {
@@ -170,6 +189,7 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
           fileList: [],
           hasMoreFiles: false,
           totalFiles: 0,
+          displaySettings,
         },
       });
     }
