@@ -11,18 +11,46 @@
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tsumiki",
+          "title": "Tsumiki",
+          "icon": "$(symbol-class)"
+        }
+      ]
+    },
+    "views": {
+      "tsumiki": [
+        {
+          "id": "tsumikiView",
+          "name": "本日の記録",
+          "type": "webview"
+        }
+      ]
+    }
+  },
   "dependencies": {
     "better-sqlite3": "^11.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "@types/vscode": "^1.80.0",
     "esbuild": "^0.19.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "typescript": "^5.3.0"
   },
   "scripts": {
-    "build": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
-    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch"
+    "build": "npm run build:extension && npm run build:webview",
+    "build:extension": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "build:webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/webview.js --format=iife --platform=browser --jsx=automatic",
+    "watch": "npm run watch:extension & npm run watch:webview",
+    "watch:extension": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "watch:webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/webview.js --format=iife --platform=browser --jsx=automatic --watch"
   }
 }
