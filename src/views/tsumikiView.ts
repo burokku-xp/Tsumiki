@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { getDailyStatsByDate, getFileEditsByDate, type LanguageRatio } from '../database';
+import { getDatabase } from '../database/db';
 
 /**
  * WebViewプロバイダー
@@ -57,9 +58,55 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const stats = getDailyStatsByDate(today);
-    const fileEdits = getFileEditsByDate(today);
+    // データベースが利用可能かチェック（エラーをキャッチ）
+    let dbAvailable = false;
+    try {
+      const db = getDatabase();
+      dbAvailable = db !== null;
+    } catch (error) {
+      console.error('[Tsumiki] Error checking database availability:', error);
+      dbAvailable = false;
+    }
+    
+    if (!dbAvailable) {
+      // データベースが利用できない場合は空のデータを送信
+      console.log('[Tsumiki] Database not available, sending empty data');
+      this._view.webview.postMessage({
+        command: 'updateDailyData',
+        data: {
+          workTime: 0,
+          saveCount: 0,
+          fileCount: 0,
+          lineChanges: 0,
+          languageRatios: [],
+          fileList: [],
+          hasMoreFiles: false,
+          totalFiles: 0,
+        },
+      });
+      return;
+    }
+
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      // データベース関数を安全に呼び出す
+      let stats = null;
+      let fileEdits: any[] = [];
+      
+      try {
+        stats = getDailyStatsByDate(today);
+      } catch (error) {
+        console.error('[Tsumiki] Failed to get daily stats:', error);
+        stats = null;
+      }
+      
+      try {
+        fileEdits = getFileEditsByDate(today);
+      } catch (error) {
+        console.error('[Tsumiki] Failed to get file edits:', error);
+        fileEdits = [];
+      }
 
     // ファイル一覧を準備（最大10件）
     const fileList = fileEdits
@@ -96,19 +143,36 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
       .sort(([, a], [, b]) => b - a)
       .map(([lang, percent]) => ({ language: lang, percent }));
 
-    this._view.webview.postMessage({
-      command: 'updateDailyData',
-      data: {
-        workTime: stats?.work_time || 0,
-        saveCount: stats?.save_count || 0,
-        fileCount: stats?.file_count || 0,
-        lineChanges: stats?.line_changes || 0,
-        languageRatios: sortedLanguageRatios,
-        fileList,
-        hasMoreFiles,
-        totalFiles,
-      },
-    });
+      this._view.webview.postMessage({
+        command: 'updateDailyData',
+        data: {
+          workTime: stats?.work_time || 0,
+          saveCount: stats?.save_count || 0,
+          fileCount: stats?.file_count || 0,
+          lineChanges: stats?.line_changes || 0,
+          languageRatios: sortedLanguageRatios,
+          fileList,
+          hasMoreFiles,
+          totalFiles,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to send daily data:', error);
+      // エラーが発生した場合でも空のデータを送信してUIを更新
+      this._view.webview.postMessage({
+        command: 'updateDailyData',
+        data: {
+          workTime: 0,
+          saveCount: 0,
+          fileCount: 0,
+          lineChanges: 0,
+          languageRatios: [],
+          fileList: [],
+          hasMoreFiles: false,
+          totalFiles: 0,
+        },
+      });
+    }
   }
 
   /**
@@ -118,13 +182,38 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'webview.js')
     );
+    const cssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'webview.css')
+    );
 
-    // VSCode APIを設定するスクリプト
+    // VSCode APIを設定するスクリプト（エラーハンドリング付き）
     const vscodeApiScript = `
       (function() {
-        const vscode = acquireVsCodeApi();
-        window.vscode = vscode;
+        try {
+          const vscode = acquireVsCodeApi();
+          window.vscode = vscode;
+        } catch (error) {
+          console.error('Failed to acquire VSCode API:', error);
+          // フォールバック: ダミーのVSCode API
+          window.vscode = {
+            postMessage: function(message) {
+              console.log('VSCode API not available, message:', message);
+            },
+            getState: function() { return null; },
+            setState: function(state) { console.log('VSCode API not available, state:', state); }
+          };
+        }
       })();
+    `;
+
+    // エラーハンドリング用のスクリプト
+    const errorHandlerScript = `
+      window.addEventListener('error', function(event) {
+        console.error('WebView error:', event.error);
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        console.error('WebView unhandled rejection:', event.reason);
+      });
     `;
 
     return `<!DOCTYPE html>
@@ -133,6 +222,7 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tsumiki</title>
+    <link rel="stylesheet" href="${cssUri}">
     <style>
         body {
             font-family: var(--vscode-font-family);
@@ -145,11 +235,34 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
         #root {
             width: 100%;
         }
+        .error-message {
+            padding: 20px;
+            color: var(--vscode-errorForeground);
+            background-color: var(--vscode-inputValidation-errorBackground);
+            border: 1px solid var(--vscode-inputValidation-errorBorder);
+            margin: 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="error-message" id="error-message" style="display: none;"></div>
+    </div>
     <script>${vscodeApiScript}</script>
+    <script>${errorHandlerScript}</script>
+    <script>
+      // スクリプト読み込みエラーのハンドリング
+      window.addEventListener('error', function(event) {
+        if (event.target && event.target.tagName === 'SCRIPT') {
+          const errorDiv = document.getElementById('error-message');
+          if (errorDiv) {
+            errorDiv.textContent = 'スクリプトの読み込みに失敗しました: ' + event.target.src;
+            errorDiv.style.display = 'block';
+          }
+        }
+      });
+    </script>
     <script src="${scriptUri}"></script>
 </body>
 </html>`;

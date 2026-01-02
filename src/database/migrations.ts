@@ -89,6 +89,11 @@ function migration_001_initial_schema(db: Database.Database): void {
 export function runMigrations(): void {
   const db = getDatabase();
   
+  if (!db) {
+    console.error('Database not available, skipping migrations');
+    return;
+  }
+  
   try {
     db.transaction(() => {
       const currentVersion = getCurrentSchemaVersion(db);
@@ -106,7 +111,8 @@ export function runMigrations(): void {
     })();
   } catch (error) {
     console.error('Migration failed:', error);
-    throw error;
+    // エラーを再スローせず、ログに記録するだけ
+    // これにより拡張機能は動作し続ける
   }
 }
 

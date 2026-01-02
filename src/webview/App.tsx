@@ -22,22 +22,36 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 初期データをリクエスト
-    vscode.postMessage({ command: 'requestDailyData' });
-
-    // メッセージリスナーを設定
-    const handleMessage = (event: MessageEvent) => {
-      const message = event.data;
-      if (message.command === 'updateDailyData') {
-        setData(message.data);
+    try {
+      // 初期データをリクエスト
+      if (window.vscode) {
+        vscode.postMessage({ command: 'requestDailyData' });
+      } else {
+        console.warn('VSCode API not available, using fallback');
         setLoading(false);
       }
-    };
 
-    window.addEventListener('message', handleMessage);
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
+      // メッセージリスナーを設定
+      const handleMessage = (event: MessageEvent) => {
+        try {
+          const message = event.data;
+          if (message && message.command === 'updateDailyData') {
+            setData(message.data);
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('Error handling message:', error);
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+      return () => {
+        window.removeEventListener('message', handleMessage);
+      };
+    } catch (error) {
+      console.error('Error in useEffect:', error);
+      setLoading(false);
+    }
   }, []);
 
   if (loading) {
