@@ -43,19 +43,10 @@ const SettingsApp: React.FC = () => {
 
   useEffect(() => {
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:44','message':'useEffect started',data:{hasVscode:!!window.vscode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       // 初期設定をリクエスト
       if (window.vscode) {
-        // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:48','message':'Requesting settings from extension',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
         vscode.postMessage({ command: 'requestSettings' });
       } else {
-        // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:51','message':'VSCode API not available',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
         console.warn('VSCode API not available, using fallback');
         setLoading(false);
       }
@@ -63,40 +54,22 @@ const SettingsApp: React.FC = () => {
       // メッセージリスナーを設定
       const handleMessage = (event: MessageEvent) => {
         try {
-          // #region agent log
-          fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:58','message':'Message received in React',data:{command:event.data?.command},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
           const message = event.data;
           if (message && message.command === 'updateSettings') {
-            // #region agent log
-            fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:61','message':'updateSettings command received',data:{hasData:!!message.data},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
             setSettings(message.data);
             setWebhookUrlInput(message.data.slack.webhookUrl || '');
             setLoading(false);
-            // #region agent log
-            fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:65','message':'Settings updated in React state',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
           }
         } catch (error) {
-          // #region agent log
-          fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:68','message':'Error handling message',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
           console.error('Error handling message:', error);
         }
       };
 
       window.addEventListener('message', handleMessage);
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:72','message':'Message listener registered',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       return () => {
         window.removeEventListener('message', handleMessage);
       };
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsApp.tsx:77','message':'Error in useEffect',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       console.error('Error in useEffect:', error);
       setLoading(false);
     }
