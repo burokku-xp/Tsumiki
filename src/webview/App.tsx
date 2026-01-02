@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { vscode } from './vscodeApi';
 import Header from './components/Header';
+import TimerControl from './components/TimerControl';
 import StatsSection from './components/StatsSection';
 import DetailsSection from './components/DetailsSection';
 import FileListSection from './components/FileListSection';
@@ -28,6 +29,7 @@ export interface DailyData {
 const App: React.FC = () => {
   const [data, setData] = useState<DailyData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [timerState, setTimerState] = useState({ isRunning: false, elapsedTime: 0 });
 
   useEffect(() => {
     try {
@@ -46,6 +48,11 @@ const App: React.FC = () => {
           if (message && message.command === 'updateDailyData') {
             setData(message.data);
             setLoading(false);
+          } else if (message && message.command === 'updateTimerState') {
+            setTimerState({
+              isRunning: message.data.isRunning,
+              elapsedTime: message.data.elapsedTime,
+            });
           }
         } catch (error) {
           console.error('Error handling message:', error);
@@ -74,6 +81,13 @@ const App: React.FC = () => {
     return (
       <div className="app">
         <Header />
+        <TimerControl
+          isRunning={timerState.isRunning}
+          elapsedTime={timerState.elapsedTime}
+          onStateChange={(isRunning, elapsedTime) => {
+            setTimerState({ isRunning, elapsedTime });
+          }}
+        />
         <div className="no-data">本日のデータはありません</div>
       </div>
     );
@@ -91,6 +105,13 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <Header />
+      <TimerControl
+        isRunning={timerState.isRunning}
+        elapsedTime={timerState.elapsedTime}
+        onStateChange={(isRunning, elapsedTime) => {
+          setTimerState({ isRunning, elapsedTime });
+        }}
+      />
       {displaySettings.workTime ||
       displaySettings.saveCount ||
       displaySettings.fileCount ? (

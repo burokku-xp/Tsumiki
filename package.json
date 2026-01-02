@@ -155,8 +155,10 @@
     "typescript": "^5.3.0"
   },
   "scripts": {
+    "postinstall": "npm run rebuild-sqlite",
+    "rebuild-sqlite": "npm rebuild better-sqlite3",
     "build": "npm run build:extension && npm run build:webview && npm run build:webview:settings",
-    "build:extension": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "build:extension": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --external:better-sqlite3 --format=cjs --platform=node",
     "build:webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/webview.js --format=iife --platform=browser --jsx=automatic",
     "build:webview:settings": "esbuild src/webview/settings/index.tsx --bundle --outfile=out/webview/settings.js --format=iife --platform=browser --jsx=automatic && cp src/webview/settings/SettingsApp.css out/webview/settings.css",
     "watch": "npm run watch:extension & npm run watch:webview & npm run watch:webview:settings",

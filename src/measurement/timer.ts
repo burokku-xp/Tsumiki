@@ -65,11 +65,15 @@ export class WorkTimer {
       vscode.window.showInformationMessage('作業時間計測を開始しました');
       console.log('[Tsumiki] Timer started, session ID:', this.currentSessionId);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      vscode.window.showErrorMessage(`タイマーの開始に失敗しました: ${errorMessage}`);
-      console.error('[Tsumiki] Failed to start timer:', error);
-      this.startTime = null;
+      // データベースが利用できない場合でも、タイマーは動作できるようにする
+      // セッションIDはnullのまま（メモリ内で状態を保持）
       this.currentSessionId = null;
+      this.lastActivityTime = now;
+      this.updateStatusBar();
+      this.startInactivityCheck();
+      vscode.window.showWarningMessage('データベースが利用できないため、タイマーは動作しますが、データは保存されません');
+      console.warn('[Tsumiki] Timer started without database (session will not be saved)');
+      // エラーを再スローしない（タイマーは動作するため）
     }
   }
 
@@ -77,30 +81,42 @@ export class WorkTimer {
    * タイマーを停止
    */
   public stop(): void {
-    if (!this.isRunning() || !this.currentSessionId || !this.startTime) {
+    if (!this.isRunning() || !this.startTime) {
       return;
     }
 
     const now = Math.floor(Date.now() / 1000);
     const duration = now - this.startTime;
 
-    try {
-      updateSession(this.currentSessionId, now, duration);
+    // セッションIDがある場合のみデータベースに保存
+    if (this.currentSessionId) {
+      try {
+        updateSession(this.currentSessionId, now, duration);
+        vscode.window.showInformationMessage(
+          `作業時間計測を停止しました (${this.formatDuration(duration)})`
+        );
+        console.log('[Tsumiki] Timer stopped, duration:', duration);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showWarningMessage(
+          `データベースへの保存に失敗しましたが、タイマーは停止しました (${this.formatDuration(duration)})`
+        );
+        console.error('[Tsumiki] Failed to save session:', error);
+      }
+    } else {
+      // データベースが利用できなかった場合
       vscode.window.showInformationMessage(
-        `作業時間計測を停止しました (${this.formatDuration(duration)})`
+        `作業時間計測を停止しました (${this.formatDuration(duration)}) - データは保存されませんでした`
       );
-      console.log('[Tsumiki] Timer stopped, duration:', duration);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      vscode.window.showErrorMessage(`タイマーの停止に失敗しました: ${errorMessage}`);
-      console.error('[Tsumiki] Failed to stop timer:', error);
-    } finally {
-      this.currentSessionId = null;
-      this.startTime = null;
-      this.lastActivityTime = null;
-      this.stopInactivityCheck();
-      this.updateStatusBar();
+      console.log('[Tsumiki] Timer stopped without database, duration:', duration);
     }
+
+    // 状態をリセット
+    this.currentSessionId = null;
+    this.startTime = null;
+    this.lastActivityTime = null;
+    this.stopInactivityCheck();
+    this.updateStatusBar();
   }
 
   /**

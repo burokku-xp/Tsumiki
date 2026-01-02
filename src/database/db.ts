@@ -33,12 +33,25 @@ export function getDatabase(): Database.Database | null {
     const globalStoragePath = getGlobalStoragePath();
     const dbPath = path.join(globalStoragePath, 'tsumiki.db');
 
+    console.log('[Tsumiki] Database path:', dbPath);
+    console.log('[Tsumiki] Extension context:', extensionContext ? 'available' : 'null');
+
     // ディレクトリが存在しない場合は作成
     if (!fs.existsSync(globalStoragePath)) {
-      fs.mkdirSync(globalStoragePath, { recursive: true });
+      console.log('[Tsumiki] Creating directory:', globalStoragePath);
+      try {
+        fs.mkdirSync(globalStoragePath, { recursive: true });
+        console.log('[Tsumiki] Directory created successfully');
+      } catch (mkdirError) {
+        console.error('[Tsumiki] Failed to create directory:', mkdirError);
+        throw new Error(`Failed to create database directory: ${mkdirError instanceof Error ? mkdirError.message : String(mkdirError)}`);
+      }
     }
 
+    console.log('[Tsumiki] Creating database instance...');
     dbInstance = new Database(dbPath);
+    
+    console.log('[Tsumiki] Database instance created, setting pragmas...');
     
     // 外部キー制約を有効化
     dbInstance.pragma('foreign_keys = ON');
@@ -46,11 +59,16 @@ export function getDatabase(): Database.Database | null {
     // WALモードを有効化（パフォーマンス向上）
     dbInstance.pragma('journal_mode = WAL');
 
+    console.log('[Tsumiki] Database initialized successfully');
     return dbInstance;
   } catch (error) {
-    // エラーメッセージを簡潔に（スタックトレースは表示しない）
+    // エラーメッセージを詳細に記録
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn('[Tsumiki] Database not available:', errorMessage);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('[Tsumiki] Database initialization failed:', errorMessage);
+    if (errorStack) {
+      console.error('[Tsumiki] Stack trace:', errorStack);
+    }
     // エラーが発生した場合は、フラグを設定して再度試みないようにする
     dbInstance = null;
     dbInitializationFailed = true;

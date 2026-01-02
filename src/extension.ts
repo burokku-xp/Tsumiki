@@ -58,23 +58,47 @@ export function activate(context: vscode.ExtensionContext) {
   try {
     // ステップ1: データベースを初期化
     console.log('[Tsumiki] Step 1: Initializing database...');
+    console.log('[Tsumiki] Extension context:', {
+      extensionPath: context.extensionPath,
+      globalStorageUri: context.globalStorageUri?.toString(),
+      extensionUri: context.extensionUri?.toString()
+    });
     try {
       const db = initDatabase(context);
       if (db) {
         console.log('[Tsumiki] Database instance created');
-        initializeDatabase();
-        console.log('[Tsumiki] Database initialized successfully');
+        try {
+          initializeDatabase();
+          console.log('[Tsumiki] Database initialized successfully');
+        } catch (migrationError) {
+          console.error('[Tsumiki] Database migration failed:', migrationError);
+          activationError('database migration', migrationError, true); // マイグレーションエラーは表示する
+        }
       } else {
-        console.warn('[Tsumiki] Database initialization returned null, continuing without database');
+        console.error('[Tsumiki] Database initialization returned null');
+        console.error('[Tsumiki] This is a critical error - database is required for core functionality');
+        vscode.window.showErrorMessage(
+          'Tsumiki: データベースの初期化に失敗しました。拡張機能の一部機能が動作しない可能性があります。',
+          '詳細を確認'
+        ).then(selection => {
+          if (selection === '詳細を確認') {
+            vscode.window.showInformationMessage(
+              `データベースパス: ${context.globalStorageUri?.fsPath || '不明'}\n` +
+              'コンソールログを確認してください。'
+            );
+          }
+        });
       }
     } catch (error) {
-      activationError('database initialization', error, false); // データベースエラーは表示しない
-      // データベースがなくても拡張機能は動作する
+      activationError('database initialization', error, true); // データベースエラーは表示する
+      console.error('[Tsumiki] Critical: Database initialization failed completely');
     }
 
     // ステップ2: WebViewプロバイダーを登録
     console.log('[Tsumiki] Step 2: Registering WebView provider...');
     try {
+      // workTimerは後で設定される可能性があるため、一時的にundefinedで作成
+      // 後でsetWorkTimerメソッドで設定する
       viewProvider = new TsumikiViewProvider(context.extensionUri);
       console.log('[Tsumiki] WebView provider instance created');
       
@@ -109,6 +133,14 @@ export function activate(context: vscode.ExtensionContext) {
       
       // ステータスバーの定期更新を開始
       workTimer.startStatusBarUpdate();
+      
+      // WebViewプロバイダーにworkTimerを設定
+      if (viewProvider) {
+        viewProvider.setWorkTimer(workTimer);
+        console.log('[Tsumiki] WorkTimer set to viewProvider');
+      } else {
+        console.warn('[Tsumiki] viewProvider is undefined, cannot set workTimer');
+      }
       
       context.subscriptions.push(workTimer);
       console.log('[Tsumiki] Measurement features initialized successfully');

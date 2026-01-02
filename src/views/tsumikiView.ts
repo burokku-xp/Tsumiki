@@ -3,6 +3,7 @@ import * as path from 'path';
 import { getDailyStatsByDate, getFileEditsByDate, type LanguageRatio } from '../database';
 import { getDatabase } from '../database/db';
 import { getSettingsManager } from '../settings/config';
+import { WorkTimer } from '../measurement/timer';
 
 /**
  * WebViewプロバイダー
@@ -12,12 +13,20 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private _settingsManager = getSettingsManager();
   private _settingsChangeDisposable?: vscode.Disposable;
+  private _workTimer?: WorkTimer;
 
   constructor(private readonly _extensionUri: vscode.Uri) {
     // 設定変更を監視してリアルタイム反映
     this._settingsChangeDisposable = this._settingsManager.onDidChange(() => {
       this._sendDailyData();
     });
+  }
+
+  /**
+   * WorkTimerを設定（extension.tsから呼び出される）
+   */
+  public setWorkTimer(workTimer: WorkTimer) {
+    this._workTimer = workTimer;
   }
 
   dispose() {
@@ -44,6 +53,15 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
         switch (message.command) {
           case 'requestDailyData':
             await this._handleRequestDailyData();
+            break;
+          case 'requestTimerState':
+            await this._handleRequestTimerState();
+            break;
+          case 'startTimer':
+            await this._handleStartTimer();
+            break;
+          case 'stopTimer':
+            await this._handleStopTimer();
             break;
         }
       },
@@ -289,9 +307,94 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * タイマー状態をリクエスト
+   */
+  private async _handleRequestTimerState() {
+    if (!this._view || !this._workTimer) {
+      return;
+    }
+
+    const isRunning = this._workTimer.isRunning();
+    const elapsedTime = this._workTimer.getElapsedTime();
+
+    this._view.webview.postMessage({
+      command: 'updateTimerState',
+      data: {
+        isRunning,
+        elapsedTime,
+      },
+    });
+  }
+
+  /**
+   * タイマー開始
+   */
+  private async _handleStartTimer() {
+    if (!this._workTimer) {
+      if (this._view) {
+        this._view.webview.postMessage({
+          command: 'timerError',
+          data: { message: 'タイマーが初期化されていません' },
+        });
+      }
+      return;
+    }
+
+    try {
+      this._workTimer.start();
+      this._updateTimerState();
+      // 日次データも更新（作業時間が変わるため）
+      this._sendDailyData();
+    } catch (error) {
+      console.error('[Tsumiki] Error starting timer:', error);
+      if (this._view) {
+        this._view.webview.postMessage({
+          command: 'timerError',
+          data: { message: `タイマーの開始に失敗しました: ${error instanceof Error ? error.message : String(error)}` },
+        });
+      }
+    }
+  }
+
+  /**
+   * タイマー停止
+   */
+  private async _handleStopTimer() {
+    if (!this._workTimer) {
+      return;
+    }
+
+    this._workTimer.stop();
+    this._updateTimerState();
+    // 日次データも更新（作業時間が変わるため）
+    this._sendDailyData();
+  }
+
+  /**
+   * タイマー状態を更新
+   */
+  private _updateTimerState() {
+    if (!this._view || !this._workTimer) {
+      return;
+    }
+
+    const isRunning = this._workTimer.isRunning();
+    const elapsedTime = this._workTimer.getElapsedTime();
+
+    this._view.webview.postMessage({
+      command: 'updateTimerState',
+      data: {
+        isRunning,
+        elapsedTime,
+      },
+    });
+  }
+
+  /**
    * データ更新を通知（外部から呼び出し可能）
    */
   public refresh() {
     this._sendDailyData();
+    this._updateTimerState();
   }
 }
