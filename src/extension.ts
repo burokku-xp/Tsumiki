@@ -6,6 +6,8 @@ import { FileTracker } from './measurement/file-tracker';
 import { LineCounter } from './measurement/line-counter';
 import { LanguageDetector } from './measurement/language-detector';
 import { getActiveSession } from './database';
+import { setWebhookUrl, removeWebhookUrl, hasWebhookUrl } from './slack/config';
+import { postToSlack } from './slack/webhook';
 
 // WebViewプロバイダーのインスタンスを保持（リアルタイム更新用）
 let viewProvider: TsumikiViewProvider | undefined;
@@ -133,6 +135,116 @@ export function activate(context: vscode.ExtensionContext) {
         }
       });
       context.subscriptions.push(stopTimerCommand);
+
+      // Slack Webhook URL設定コマンド
+      const setWebhookUrlCommand = vscode.commands.registerCommand('tsumiki.slack.setWebhookUrl', async () => {
+        try {
+          const currentUrl = await hasWebhookUrl(context);
+          const prompt = currentUrl
+            ? 'Slack Webhook URLを入力してください（既存のURLを上書きします）:'
+            : 'Slack Webhook URLを入力してください:';
+          
+          const url = await vscode.window.showInputBox({
+            prompt,
+            placeHolder: 'https://hooks.slack.com/services/...',
+            validateInput: (value) => {
+              if (!value) {
+                return 'URLを入力してください';
+              }
+              if (!value.startsWith('https://hooks.slack.com/')) {
+                return '無効なWebhook URLです。Slack Incoming WebhookのURLを入力してください。';
+              }
+              return null;
+            },
+          });
+
+          if (url) {
+            await setWebhookUrl(context, url);
+            vscode.window.showInformationMessage('Slack Webhook URLを設定しました。');
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(`Webhook URLの設定に失敗しました: ${errorMessage}`);
+        }
+      });
+      context.subscriptions.push(setWebhookUrlCommand);
+
+      // Slack Webhook URL削除コマンド
+      const removeWebhookUrlCommand = vscode.commands.registerCommand('tsumiki.slack.removeWebhookUrl', async () => {
+        try {
+          const hasUrl = await hasWebhookUrl(context);
+          if (!hasUrl) {
+            vscode.window.showInformationMessage('Webhook URLが設定されていません。');
+            return;
+          }
+
+          const confirm = await vscode.window.showWarningMessage(
+            'Webhook URLを削除しますか？',
+            { modal: true },
+            '削除'
+          );
+
+          if (confirm === '削除') {
+            await removeWebhookUrl(context);
+            vscode.window.showInformationMessage('Webhook URLを削除しました。');
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(`Webhook URLの削除に失敗しました: ${errorMessage}`);
+        }
+      });
+      context.subscriptions.push(removeWebhookUrlCommand);
+
+      // Slack投稿コマンド
+      const postToSlackCommand = vscode.commands.registerCommand('tsumiki.slack.postToSlack', async () => {
+        try {
+          const hasUrl = await hasWebhookUrl(context);
+          if (!hasUrl) {
+            const action = await vscode.window.showWarningMessage(
+              'Webhook URLが設定されていません。設定しますか？',
+              '設定',
+              'キャンセル'
+            );
+            if (action === '設定') {
+              await vscode.commands.executeCommand('tsumiki.slack.setWebhookUrl');
+            }
+            return;
+          }
+
+          // 投稿確認
+          const confirm = await vscode.window.showInformationMessage(
+            '本日の記録をSlackに投稿しますか？',
+            '投稿',
+            'キャンセル'
+          );
+
+          if (confirm !== '投稿') {
+            return;
+          }
+
+          // 投稿処理（非同期で実行）
+          vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: 'Slackに投稿中...',
+              cancellable: false,
+            },
+            async (progress) => {
+              try {
+                await postToSlack(context);
+                vscode.window.showInformationMessage('Slackに投稿しました。');
+              } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`Slackへの投稿に失敗しました: ${errorMessage}`);
+              }
+            }
+          );
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(`Slack投稿処理でエラーが発生しました: ${errorMessage}`);
+        }
+      });
+      context.subscriptions.push(postToSlackCommand);
 
       console.log('[Tsumiki] Commands registered successfully');
     } catch (error) {

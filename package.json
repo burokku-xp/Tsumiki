@@ -31,6 +31,18 @@
       {
         "command": "tsumiki.stopTimer",
         "title": "作業時間計測を停止"
+      },
+      {
+        "command": "tsumiki.slack.setWebhookUrl",
+        "title": "Slack Webhook URLを設定"
+      },
+      {
+        "command": "tsumiki.slack.removeWebhookUrl",
+        "title": "Slack Webhook URLを削除"
+      },
+      {
+        "command": "tsumiki.slack.postToSlack",
+        "title": "本日の記録をSlackに投稿"
       }
     ],
     "configuration": {
@@ -111,12 +123,14 @@
     }
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0"
+    "better-sqlite3": "^11.0.0",
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
     "@types/mocha": "^10.0.0",
     "@types/node": "^20.0.0",
+    "@types/node-fetch": "^2.6.13",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/vscode": "^1.80.0",
