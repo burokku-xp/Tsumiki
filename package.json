@@ -18,6 +18,19 @@
       {
         "command": "tsumiki.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "tsumiki.toggleTimer",
+        "title": "作業時間計測の開始/停止",
+        "icon": "$(clock)"
+      },
+      {
+        "command": "tsumiki.startTimer",
+        "title": "作業時間計測を開始"
+      },
+      {
+        "command": "tsumiki.stopTimer",
+        "title": "作業時間計測を停止"
       }
     ],
     "viewsContainers": {
