@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { initDatabase, initializeDatabase, closeDatabase } from './database';
 import { TsumikiViewProvider } from './views/tsumikiView';
+import { SettingsViewProvider } from './views/settingsView';
 import { WorkTimer } from './measurement/timer';
 import { FileTracker } from './measurement/file-tracker';
 import { LineCounter } from './measurement/line-counter';
@@ -11,6 +12,7 @@ import { postToSlack } from './slack/webhook';
 
 // WebViewプロバイダーのインスタンスを保持（リアルタイム更新用）
 let viewProvider: TsumikiViewProvider | undefined;
+let settingsViewProvider: SettingsViewProvider | undefined;
 
 // 計測機能のインスタンス
 let workTimer: WorkTimer | undefined;
@@ -82,6 +84,19 @@ export function activate(context: vscode.ExtensionContext) {
     } catch (error) {
       activationError('WebView provider registration', error, true); // WebViewエラーは表示する
       // WebViewが登録できなくても拡張機能は動作する
+    }
+
+    // ステップ2-2: 設定画面のWebViewプロバイダーを登録
+    console.log('[Tsumiki] Step 2-2: Registering Settings WebView provider...');
+    try {
+      settingsViewProvider = new SettingsViewProvider(context.extensionUri, context);
+      console.log('[Tsumiki] Settings WebView provider instance created');
+      
+      const settingsRegistration = vscode.window.registerWebviewViewProvider('tsumikiSettingsView', settingsViewProvider);
+      context.subscriptions.push(settingsRegistration);
+      console.log('[Tsumiki] Settings WebView provider registered successfully');
+    } catch (error) {
+      activationError('Settings WebView provider registration', error, true);
     }
 
     // ステップ3: 計測機能を初期化
@@ -194,6 +209,12 @@ export function activate(context: vscode.ExtensionContext) {
         }
       });
       context.subscriptions.push(removeWebhookUrlCommand);
+
+      // 設定画面を開くコマンド
+      const openSettingsCommand = vscode.commands.registerCommand('tsumiki.openSettings', () => {
+        vscode.commands.executeCommand('tsumiki.tsumikiSettingsView.focus');
+      });
+      context.subscriptions.push(openSettingsCommand);
 
       // Slack投稿コマンド
       const postToSlackCommand = vscode.commands.registerCommand('tsumiki.slack.postToSlack', async () => {
@@ -363,6 +384,10 @@ export function deactivate() {
   // WebViewプロバイダーを解放
   if (viewProvider) {
     viewProvider.dispose();
+  }
+  
+  if (settingsViewProvider) {
+    settingsViewProvider.dispose();
   }
   
   closeDatabase();
