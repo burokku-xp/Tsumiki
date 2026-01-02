@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { initDatabase, initializeDatabase } from './database';
+import { initDatabase, initializeDatabase, closeDatabase } from './database';
 import { TsumikiViewProvider } from './views/tsumikiView';
 
 // WebViewプロバイダーのインスタンスを保持（リアルタイム更新用）
@@ -114,4 +114,5 @@ export function activate(context: vscode.ExtensionContext) {
  */
 export function deactivate() {
   console.log('Tsumiki extension is now deactivated!');
+  closeDatabase();
 }
