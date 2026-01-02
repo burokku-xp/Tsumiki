@@ -1,2 +1,4 @@
 .dock/
-.cursor/
+.cursor/*
+!.cursor/commands/
+.env
