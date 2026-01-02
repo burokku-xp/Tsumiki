@@ -111,6 +111,14 @@ const SettingsApp: React.FC = () => {
 
   const handleWebhookUrlSave = async () => {
     if (saving) return;
+    
+    // フロントエンドでの基本的なバリデーション
+    const trimmedUrl = webhookUrlInput.trim();
+    if (trimmedUrl && !trimmedUrl.startsWith('https://hooks.slack.com/')) {
+      // エラーメッセージはバックエンドで表示されるが、UX向上のためここでも検証
+      // バックエンドで検証されるので、ここでは送信を許可
+    }
+    
     setSaving(true);
     try {
       vscode.postMessage({
@@ -153,7 +161,7 @@ const SettingsApp: React.FC = () => {
               <label className="setting-label">
                 <input
                   type="checkbox"
-                  checked={settings.display[item.key as keyof typeof settings.display]}
+                  checked={settings.display[item.key as keyof typeof settings.display] ?? false}
                   onChange={(e) => handleDisplayToggle(item.key, e.target.checked)}
                   className="setting-checkbox"
                 />

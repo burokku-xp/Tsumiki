@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import { getSettingsManager, ConfigKeys, DefaultSettings, type SlackPostItem } from '../settings/config';
+import { getSettingsManager, type SlackPostItem } from '../settings/config';
 import { setWebhookUrl, getWebhookUrl, removeWebhookUrl } from '../slack/config';
 
 /**
@@ -44,19 +43,25 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
 
     // メッセージハンドラーを設定
     webviewView.webview.onDidReceiveMessage(
-      async (message) => {
+      async (message: any) => {
         switch (message.command) {
           case 'requestSettings':
             await this._handleRequestSettings();
             break;
           case 'updateDisplaySetting':
-            await this._handleUpdateDisplaySetting(message.key, message.value);
+            if (typeof message.key === 'string' && typeof message.value === 'boolean') {
+              await this._handleUpdateDisplaySetting(message.key, message.value);
+            }
             break;
           case 'updateSlackPostItems':
-            await this._handleUpdateSlackPostItems(message.items);
+            if (Array.isArray(message.items)) {
+              await this._handleUpdateSlackPostItems(message.items);
+            }
             break;
           case 'updateWebhookUrl':
-            await this._handleUpdateWebhookUrl(message.url);
+            if (typeof message.url === 'string') {
+              await this._handleUpdateWebhookUrl(message.url);
+            }
             break;
         }
       },
