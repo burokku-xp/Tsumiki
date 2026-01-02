@@ -5,7 +5,7 @@ import { WorkTimer } from './measurement/timer';
 import { FileTracker } from './measurement/file-tracker';
 import { LineCounter } from './measurement/line-counter';
 import { LanguageDetector } from './measurement/language-detector';
-import { getActiveSession } from './database';
+import { getActiveSession, createSession, getSession } from './database';
 import { setWebhookUrl, removeWebhookUrl, hasWebhookUrl } from './slack/config';
 import { postToSlack } from './slack/webhook';
 
@@ -257,13 +257,33 @@ export function activate(context: vscode.ExtensionContext) {
       const disposable = vscode.workspace.onDidSaveTextDocument((document) => {
         try {
           // アクティブなセッションを取得
-          const activeSession = getActiveSession();
+          let activeSession = getActiveSession();
+          let sessionAutoCreated = false;
+          
+          // セッションが存在しない場合は自動的に作成
           if (!activeSession) {
-            // セッションが存在しない場合は計測しない
-            setTimeout(() => {
-              refreshWebView();
-            }, 500);
-            return;
+            try {
+              const now = Math.floor(Date.now() / 1000);
+              const sessionId = createSession(now);
+              activeSession = getSession(sessionId);
+              sessionAutoCreated = true;
+              console.log('[Tsumiki] Auto-created session for file save:', sessionId);
+              
+              // タイマーも更新（存在する場合）
+              if (workTimer) {
+                workTimer.setSession(sessionId, now);
+              }
+              
+              // セッション自動作成時にユーザーに通知（初回のみ）
+              vscode.window.showInformationMessage('セッションを自動作成しました。作業記録を開始します。');
+            } catch (error) {
+              console.error('[Tsumiki] Failed to auto-create session:', error);
+              // セッション作成に失敗した場合は記録しない
+              setTimeout(() => {
+                refreshWebView();
+              }, 500);
+              return;
+            }
           }
 
           // 行数を計算
@@ -279,8 +299,13 @@ export function activate(context: vscode.ExtensionContext) {
           }
 
           // ファイル編集を追跡（行数と言語を含む）
-          if (fileTracker) {
+          if (fileTracker && activeSession) {
             fileTracker.trackFileEdit(document, lineCount, language);
+          }
+
+          // 最後のアクティビティ時刻を更新（非アクティブセッション監視用）
+          if (workTimer) {
+            workTimer.updateLastActivity();
           }
 
           const filePath = document.uri.fsPath;
@@ -288,6 +313,8 @@ export function activate(context: vscode.ExtensionContext) {
             filePath,
             lineCount,
             language,
+            sessionId: activeSession?.id,
+            sessionAutoCreated,
           });
 
           // WebViewを更新
