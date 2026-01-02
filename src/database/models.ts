@@ -55,6 +55,9 @@ export interface LanguageRatio {
  */
 export function createSession(startTime: number): number {
   const db = getDatabase();
+  if (!db) {
+    throw new Error('Database is not available');
+  }
   const result = db.prepare(`
     INSERT INTO sessions (start_time, created_at, updated_at)
     VALUES (?, strftime('%s', 'now'), strftime('%s', 'now'))
@@ -67,6 +70,9 @@ export function createSession(startTime: number): number {
  */
 export function updateSession(sessionId: number, endTime: number, duration: number): void {
   const db = getDatabase();
+  if (!db) {
+    throw new Error('Database is not available');
+  }
   db.prepare(`
     UPDATE sessions
     SET end_time = ?, duration = ?, updated_at = strftime('%s', 'now')
@@ -79,6 +85,9 @@ export function updateSession(sessionId: number, endTime: number, duration: numb
  */
 export function getSession(sessionId: number): Session | null {
   const db = getDatabase();
+  if (!db) {
+    return null;
+  }
   return db.prepare('SELECT * FROM sessions WHERE id = ?').get(sessionId) as Session | null;
 }
 
@@ -87,6 +96,9 @@ export function getSession(sessionId: number): Session | null {
  */
 export function getSessionsByDateRange(startDate: number, endDate: number): Session[] {
   const db = getDatabase();
+  if (!db) {
+    return [];
+  }
   return db.prepare(`
     SELECT * FROM sessions
     WHERE start_time >= ? AND start_time <= ?
@@ -99,6 +111,9 @@ export function getSessionsByDateRange(startDate: number, endDate: number): Sess
  */
 export function getActiveSession(): Session | null {
   const db = getDatabase();
+  if (!db) {
+    return null;
+  }
   return db.prepare(`
     SELECT * FROM sessions
     WHERE end_time IS NULL
@@ -241,6 +256,9 @@ export function calculateDailyStats(date: string): DailyStat {
  */
 export function saveDailyStats(stats: DailyStat): void {
   const db = getDatabase();
+  if (!db) {
+    return;
+  }
   const existing = getDailyStatsByDate(stats.date);
   
   if (existing) {
@@ -308,6 +326,9 @@ export function getDailyStatsByDate(date: string): DailyStat | null {
  */
 export function getDailyStatsByDateRange(startDate: string, endDate: string): DailyStat[] {
   const db = getDatabase();
+  if (!db) {
+    return [];
+  }
   return db.prepare(`
     SELECT * FROM daily_stats
     WHERE date >= ? AND date <= ?

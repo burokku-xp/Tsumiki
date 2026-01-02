@@ -21,6 +21,13 @@ description: Archive a deployed OpenSpec change and update specs.
 4. Review the command output to confirm the target specs were updated and the change landed in `changes/archive/`.
 5. Validate with `openspec validate --strict` and inspect with `openspec show <id>` if anything looks off.
 6. **Branch management**: After archiving, switch back to the `develop` branch.
+7. **PR creation and merge**: If there are unmerged changes related to the archived change:
+   - Push the current branch to the remote repository if not already pushed.
+   - Create a pull request targeting the `develop` branch (or confirm if a PR already exists).
+   - Review any open pull requests associated with the change.
+   - Confirm that the PR has been reviewed and approved.
+   - Merge the PR if it's ready, or coordinate with the team if additional review is needed.
+   - After merging, ensure the branch is properly cleaned up.
 
 **Reference**
 - Use `openspec list` to confirm change IDs before archiving.
