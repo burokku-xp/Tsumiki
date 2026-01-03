@@ -11,11 +11,13 @@ The system SHALL provide a WebView in the primary sidebar (alongside Explorer, S
 - **THEN** the WebView is created and displayed
 - **AND** the React application loads
 - **AND** the daily summary is displayed
+- **AND** the background is transparent to match VS Code theme
 
 #### Scenario: WebView persists
 - **WHEN** VSCode is reloaded
 - **THEN** the WebView state is restored
 - **AND** the daily summary is displayed
+- **AND** the background remains transparent
 
 ### Requirement: Daily Summary Display
 The system SHALL display daily summary using a modern, card-based interface with "building block" motifs and an orange-themed color scheme.
