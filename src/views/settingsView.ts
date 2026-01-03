@@ -53,6 +53,11 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
               await this._handleUpdateDisplaySetting(message.key, message.value);
             }
             break;
+          case 'updateTheme':
+            if (typeof message.theme === 'string') {
+              await this._handleUpdateTheme(message.theme);
+            }
+            break;
           case 'updateSlackPostItems':
             if (Array.isArray(message.items)) {
               await this._handleUpdateSlackPostItems(message.items);
@@ -91,6 +96,20 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`設定の更新に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * テーマを更新
+   */
+  private async _handleUpdateTheme(theme: string) {
+    try {
+      const config = vscode.workspace.getConfiguration('tsumiki');
+      await config.update('appearance.theme', theme, vscode.ConfigurationTarget.Global);
+      vscode.window.showInformationMessage('テーマを更新しました');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`テーマの更新に失敗しました: ${errorMessage}`);
     }
   }
 

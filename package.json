@@ -84,6 +84,17 @@
           "default": true,
           "description": "編集ファイル一覧を表示する"
         },
+        "tsumiki.appearance.theme": {
+          "type": "string",
+          "enum": [
+            "orange",
+            "blue",
+            "green",
+            "monochrome"
+          ],
+          "default": "orange",
+          "description": "テーマカラーを選択"
+        },
         "tsumiki.slack.postItems": {
           "type": "array",
           "items": {

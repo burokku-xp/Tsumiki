@@ -10,6 +10,7 @@ export interface SettingsData {
     lineChanges: boolean;
     languageRatio: boolean;
     fileList: boolean;
+    theme: string;
   };
   slack: {
     postItems: string[];
@@ -33,6 +34,13 @@ const SLACK_POST_ITEMS = [
   { key: 'lineChanges', label: '変更行数' },
   { key: 'languageRatio', label: '言語比率' },
   { key: 'fileList', label: '編集ファイル一覧' },
+] as const;
+
+const THEMES = [
+  { key: 'orange', label: 'オレンジ (デフォルト)' },
+  { key: 'blue', label: 'ブルー' },
+  { key: 'green', label: 'グリーン' },
+  { key: 'monochrome', label: 'モノクロ (ダークテーマ推奨)' },
 ] as const;
 
 const SettingsApp: React.FC = () => {
@@ -150,6 +158,30 @@ const SettingsApp: React.FC = () => {
     <div className="settings-app">
       <div className="settings-header">
         <h1>設定</h1>
+      </div>
+
+      <div className="settings-section">
+        <h2 className="section-title">外観</h2>
+        <p className="section-description">拡張機能のテーマカラーを選択できます</p>
+        <div className="settings-list">
+          {THEMES.map((theme) => (
+            <div key={theme.key} className="setting-item">
+              <label className="setting-label">
+                <input
+                  type="radio"
+                  name="theme"
+                  value={theme.key}
+                  checked={settings.display.theme === theme.key}
+                  onChange={(e) => handleThemeChange(e.target.value)}
+                  className="setting-checkbox"
+                />
+                <div className="setting-content">
+                  <span className="setting-name">{theme.label}</span>
+                </div>
+              </label>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="settings-section">

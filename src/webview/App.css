@@ -1,4 +1,4 @@
-:root {
+:root, [data-theme="orange"] {
   --radius-md: 8px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -10,6 +10,7 @@
   --theme-secondary: #FFBF69;
   --theme-accent: #FFAD42;
   --theme-bg-soft: rgba(255, 159, 28, 0.1);
+  --theme-border-soft: rgba(255, 159, 28, 0.2);
   --theme-text-on-primary: #FFFFFF;
   
   /* Component Colors */
@@ -20,6 +21,33 @@
   /* Shadows */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="blue"] {
+  --theme-primary: #3A86FF;
+  --theme-secondary: #8ECAE6;
+  --theme-accent: #4361EE;
+  --theme-bg-soft: rgba(58, 134, 255, 0.1);
+  --theme-border-soft: rgba(58, 134, 255, 0.2);
+  --theme-text-on-primary: #FFFFFF;
+}
+
+[data-theme="green"] {
+  --theme-primary: #2A9D8F;
+  --theme-secondary: #8AB17D;
+  --theme-accent: #264653;
+  --theme-bg-soft: rgba(42, 157, 143, 0.1);
+  --theme-border-soft: rgba(42, 157, 143, 0.2);
+  --theme-text-on-primary: #FFFFFF;
+}
+
+[data-theme="monochrome"] {
+  --theme-primary: #F8F9FA;
+  --theme-secondary: #DEE2E6;
+  --theme-accent: #ADB5BD;
+  --theme-bg-soft: rgba(248, 249, 250, 0.1);
+  --theme-border-soft: rgba(248, 249, 250, 0.2);
+  --theme-text-on-primary: #212529;
 }
 
 html, body {
@@ -272,7 +300,7 @@ body {
   font-weight: 600;
   min-width: 24px;
   text-align: center;
-  border: 1px solid rgba(255, 159, 28, 0.2);
+  border: 1px solid var(--theme-border-soft);
 }
 
 .file-item-more {

@@ -23,6 +23,7 @@ export interface DailyData {
     lineChanges: boolean;
     languageRatio: boolean;
     fileList: boolean;
+    theme?: string;
   };
 }
 
@@ -86,6 +87,7 @@ const App: React.FC = () => {
     lineChanges: true,
     languageRatio: true,
     fileList: true,
+    theme: 'orange',
   };
 
   const showStats = displaySettings.workTime || 
@@ -94,7 +96,7 @@ const App: React.FC = () => {
                     displaySettings.lineChanges;
 
   return (
-    <div className="app">
+    <div className="app" data-theme={displaySettings.theme || 'orange'}>
       <Header />
       <TimerControl
         isRunning={timerState.isRunning}

@@ -12,10 +12,18 @@ export const ConfigKeys = {
     languageRatio: 'tsumiki.display.languageRatio',
     fileList: 'tsumiki.display.fileList',
   },
+  appearance: {
+    theme: 'tsumiki.appearance.theme',
+  },
   slack: {
     postItems: 'tsumiki.slack.postItems',
   },
 } as const;
+
+/**
+ * テーマの型
+ */
+export type Theme = 'orange' | 'blue' | 'green' | 'monochrome';
 
 /**
  * デフォルト設定値
@@ -28,6 +36,9 @@ export const DefaultSettings = {
     lineChanges: true,
     languageRatio: true,
     fileList: true,
+  },
+  appearance: {
+    theme: 'orange' as Theme,
   },
   slack: {
     postItems: [
@@ -135,6 +146,19 @@ export class SettingsManager {
   }
 
   /**
+   * テーマを取得
+   */
+  getTheme(): Theme {
+    const theme = this._config.get<string>(
+      'appearance.theme',
+      DefaultSettings.appearance.theme
+    );
+    // 有効なテーマかチェック
+    const validThemes: Theme[] = ['orange', 'blue', 'green', 'monochrome'];
+    return validThemes.includes(theme as Theme) ? (theme as Theme) : DefaultSettings.appearance.theme;
+  }
+
+  /**
    * Slack投稿項目を取得
    */
   getSlackPostItems(): SlackPostItem[] {
@@ -167,6 +191,7 @@ export class SettingsManager {
       lineChanges: this.getDisplayLineChanges(),
       languageRatio: this.getDisplayLanguageRatio(),
       fileList: this.getDisplayFileList(),
+      theme: this.getTheme(),
     };
   }
 }
