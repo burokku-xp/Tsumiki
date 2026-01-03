@@ -18,10 +18,14 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Slack Webhookにメッセージを送信
+ * @param context 拡張機能のコンテキスト
+ * @param date 日付（YYYY-MM-DD形式、デフォルトは今日）
+ * @param comment オプションのコメント
  */
 export async function postToSlack(
   context: vscode.ExtensionContext,
-  date?: string
+  date?: string,
+  comment?: string
 ): Promise<void> {
   // Webhook URLを取得
   const webhookUrl = await getWebhookUrl(context);
@@ -30,7 +34,7 @@ export async function postToSlack(
   }
 
   // 日次サマリーをフォーマット
-  const message = formatDailySummaryForSlack(date);
+  const message = formatDailySummaryForSlack(date, undefined, comment);
 
   // Slack Incoming Webhookのペイロードを構築
   const payload = {

@@ -17,6 +17,10 @@ export const ConfigKeys = {
   },
   slack: {
     postItems: 'tsumiki.slack.postItems',
+    autoPostEnabled: 'tsumiki.slack.autoPostEnabled',
+    autoPostTime: 'tsumiki.slack.autoPostTime',
+    dailyComment: 'tsumiki.slack.dailyComment',
+    userName: 'tsumiki.slack.userName',
   },
 } as const;
 
@@ -49,6 +53,10 @@ export const DefaultSettings = {
       'languageRatio',
       'fileList',
     ] as const,
+    autoPostEnabled: false,
+    autoPostTime: '18:00', // デフォルトは18:00
+    dailyComment: '', // 日次コメント
+    userName: '', // 表示名（空の場合はOSのユーザー名を使用）
   },
 } as const;
 
@@ -178,6 +186,87 @@ export class SettingsManager {
     return items.filter((item) =>
       validItems.includes(item)
     ) as SlackPostItem[];
+  }
+
+  /**
+   * 自動投稿が有効かどうかを取得
+   */
+  getSlackAutoPostEnabled(): boolean {
+    return this._config.get<boolean>(
+      'slack.autoPostEnabled',
+      DefaultSettings.slack.autoPostEnabled
+    );
+  }
+
+  /**
+   * 自動投稿の時刻（HH:mm形式）を取得
+   */
+  getSlackAutoPostTime(): string {
+    const time = this._config.get<string>(
+      'slack.autoPostTime',
+      DefaultSettings.slack.autoPostTime
+    );
+    // 形式を検証（HH:mm形式）
+    if (time && /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+      return time;
+    }
+    return DefaultSettings.slack.autoPostTime;
+  }
+
+  /**
+   * 日次コメントを取得
+   */
+  getSlackDailyComment(): string {
+    return this._config.get<string>(
+      'slack.dailyComment',
+      DefaultSettings.slack.dailyComment
+    );
+  }
+
+  /**
+   * 自動投稿の有効/無効を設定
+   */
+  async setSlackAutoPostEnabled(enabled: boolean): Promise<void> {
+    await this._config.update('slack.autoPostEnabled', enabled, vscode.ConfigurationTarget.Global);
+    this._onDidChangeEmitter.fire();
+  }
+
+  /**
+   * 自動投稿の時刻を設定
+   */
+  async setSlackAutoPostTime(time: string): Promise<void> {
+    // 形式を検証（HH:mm形式）
+    if (!/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+      throw new Error('時刻はHH:mm形式で入力してください（例: 18:00）');
+    }
+    await this._config.update('slack.autoPostTime', time, vscode.ConfigurationTarget.Global);
+    this._onDidChangeEmitter.fire();
+  }
+
+  /**
+   * 日次コメントを設定
+   */
+  async setSlackDailyComment(comment: string): Promise<void> {
+    await this._config.update('slack.dailyComment', comment, vscode.ConfigurationTarget.Global);
+    this._onDidChangeEmitter.fire();
+  }
+
+  /**
+   * Slack投稿時の表示名を設定
+   */
+  async setSlackUserName(name: string): Promise<void> {
+    await this._config.update('slack.userName', name, vscode.ConfigurationTarget.Global);
+    this._onDidChangeEmitter.fire();
+  }
+
+  /**
+   * Slack投稿時の表示名を取得
+   */
+  getSlackUserName(): string {
+    return this._config.get<string>(
+      'slack.userName',
+      DefaultSettings.slack.userName
+    );
   }
 
   /**

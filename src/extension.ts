@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { initDatabase, initializeDatabase, closeDatabase, deleteDailyStats, resetDailyData } from './database';
+import { initDatabase, initializeDatabase, closeDatabase, deleteDailyStats, resetDailyData, getDailyStatsByDate } from './database';
 import { TsumikiViewProvider } from './views/tsumikiView';
 import { SettingsViewProvider } from './views/settingsView';
 import { WorkTimer } from './measurement/timer';
@@ -9,6 +9,7 @@ import { LanguageDetector } from './measurement/language-detector';
 import { getActiveSession, createSession, getSession } from './database';
 import { setWebhookUrl, removeWebhookUrl, hasWebhookUrl } from './slack/config';
 import { postToSlack } from './slack/webhook';
+import { getSettingsManager } from './settings/config';
 
 // WebViewプロバイダーのインスタンスを保持（リアルタイム更新用）
 let viewProvider: TsumikiViewProvider | undefined;
@@ -20,6 +21,10 @@ let fileTracker: FileTracker | undefined;
 let lineCounter: LineCounter | undefined;
 let languageDetector: LanguageDetector | undefined;
 
+// 自動投稿タイマー
+let autoPostTimer: NodeJS.Timeout | null = null;
+let autoPostNextTimer: NodeJS.Timeout | null = null;
+
 /**
  * WebViewを更新（外部から呼び出し可能）
  */
@@ -27,6 +32,108 @@ export function refreshWebView() {
   if (viewProvider) {
     viewProvider.refresh();
   }
+}
+
+/**
+ * 自動投稿を実行（エラーハンドリング付き、ユーザー通知なし）
+ */
+async function executeAutoPost(context: vscode.ExtensionContext): Promise<void> {
+  try {
+    const hasUrl = await hasWebhookUrl(context);
+    if (!hasUrl) {
+      console.log('[Tsumiki] Auto-post skipped: Webhook URL not configured');
+      return;
+    }
+
+    // 本日のデータがあるかチェック
+    const today = new Date().toISOString().split('T')[0];
+    const stats = getDailyStatsByDate(today);
+    
+    // データがない場合はスキップ
+    if (!stats || (stats.work_time === 0 && stats.save_count === 0 && stats.file_count === 0)) {
+      console.log('[Tsumiki] Auto-post skipped: No data for today');
+      return;
+    }
+
+    // 自動投稿を実行（コメントあり）
+    const settingsManager = getSettingsManager();
+    const dailyComment = settingsManager.getSlackDailyComment();
+    await postToSlack(context, today, dailyComment);
+    console.log('[Tsumiki] Auto-post completed successfully');
+  } catch (error) {
+    // エラーはログに記録するが、ユーザーには通知しない
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[Tsumiki] Auto-post failed:', errorMessage);
+  }
+}
+
+/**
+ * 指定された時刻（HH:mm形式）までのミリ秒を計算
+ */
+function calculateMsUntilTime(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const now = new Date();
+  const targetTime = new Date();
+  targetTime.setHours(hours, minutes, 0, 0);
+  
+  // 今日の時刻が既に過ぎている場合は明日にする
+  if (targetTime <= now) {
+    targetTime.setDate(targetTime.getDate() + 1);
+  }
+  
+  return targetTime.getTime() - now.getTime();
+}
+
+/**
+ * 自動投稿タイマーを開始
+ */
+function startAutoPostTimer(context: vscode.ExtensionContext): void {
+  // 既存のタイマーをクリア
+  stopAutoPostTimer();
+
+  const settingsManager = getSettingsManager();
+  const enabled = settingsManager.getSlackAutoPostEnabled();
+  const postTime = settingsManager.getSlackAutoPostTime();
+
+  if (!enabled) {
+    console.log('[Tsumiki] Auto-post disabled');
+    return;
+  }
+
+  console.log(`[Tsumiki] Starting auto-post timer for time: ${postTime}`);
+
+  // 次回投稿時刻までの時間を計算
+  const scheduleNextPost = () => {
+    const msUntilTime = calculateMsUntilTime(postTime);
+    console.log(`[Tsumiki] Next auto-post scheduled in ${Math.floor(msUntilTime / 1000 / 60)} minutes`);
+    
+    autoPostNextTimer = setTimeout(() => {
+      executeAutoPost(context);
+      autoPostNextTimer = null;
+      
+      // 1日ごとに実行するタイマーを設定
+      autoPostTimer = setInterval(() => {
+        executeAutoPost(context);
+      }, 24 * 60 * 60 * 1000); // 24時間
+    }, msUntilTime);
+  };
+
+  scheduleNextPost();
+}
+
+/**
+ * 自動投稿タイマーを停止
+ */
+function stopAutoPostTimer(): void {
+  if (autoPostTimer) {
+    clearInterval(autoPostTimer);
+    autoPostTimer = null;
+  }
+  if (autoPostNextTimer) {
+    clearTimeout(autoPostNextTimer);
+    autoPostNextTimer = null;
+  }
+  console.log('[Tsumiki] Auto-post timer stopped');
 }
 
 /**
@@ -284,7 +391,7 @@ export function activate(context: vscode.ExtensionContext) {
       context.subscriptions.push(openSettingsCommand);
 
       // Slack投稿コマンド
-      const postToSlackCommand = vscode.commands.registerCommand('tsumiki.slack.postToSlack', async () => {
+      const postToSlackCommand = vscode.commands.registerCommand('tsumiki.slack.postToSlack', async (comment?: string) => {
         try {
           const hasUrl = await hasWebhookUrl(context);
           if (!hasUrl) {
@@ -297,6 +404,13 @@ export function activate(context: vscode.ExtensionContext) {
               await vscode.commands.executeCommand('tsumiki.slack.setWebhookUrl');
             }
             return;
+          }
+
+          // コメントが指定されていない場合は設定から取得
+          let finalComment = comment;
+          if (finalComment === undefined) {
+            const settingsManager = getSettingsManager();
+            finalComment = settingsManager.getSlackDailyComment();
           }
 
           // 投稿確認
@@ -319,7 +433,7 @@ export function activate(context: vscode.ExtensionContext) {
             },
             async (progress) => {
               try {
-                await postToSlack(context);
+                await postToSlack(context, undefined, finalComment);
                 vscode.window.showInformationMessage('Slackに投稿しました。');
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
@@ -459,6 +573,25 @@ export function activate(context: vscode.ExtensionContext) {
       // イベントリスナーが登録できなくても拡張機能は動作する
     }
 
+    // ステップ6: 自動投稿タイマーを初期化
+    console.log('[Tsumiki] Step 6: Initializing auto-post timer...');
+    try {
+      const settingsManager = getSettingsManager();
+      
+      // 設定変更を監視してタイマーを更新
+      settingsManager.onDidChange(() => {
+        console.log('[Tsumiki] Settings changed, updating auto-post timer');
+        startAutoPostTimer(context);
+      });
+
+      // 初回タイマーを開始
+      startAutoPostTimer(context);
+      
+      console.log('[Tsumiki] Auto-post timer initialized successfully');
+    } catch (error) {
+      activationError('auto-post timer initialization', error, false);
+    }
+
     console.log('[Tsumiki] Extension activation completed successfully');
   } catch (error) {
     activationError('activation', error, true); // 致命的なエラーは表示する
@@ -471,6 +604,9 @@ export function activate(context: vscode.ExtensionContext) {
  */
 export function deactivate() {
   console.log('Tsumiki extension is now deactivated!');
+  
+  // 自動投稿タイマーを停止
+  stopAutoPostTimer();
   
   // タイマーが動作中の場合は停止
   if (workTimer && workTimer.isRunning()) {

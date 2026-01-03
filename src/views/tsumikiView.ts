@@ -66,6 +66,34 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
           case 'resetToday':
             await this._handleResetToday();
             break;
+          case 'updateDailyComment':
+            await this._handleUpdateDailyComment(message.comment);
+            break;
+          case 'postToSlack':
+            // コマンドを実行（コメントを引数として渡す）
+            // 注意: コマンドは非同期で実行されるが、ユーザーがキャンセルした場合などは
+            // コマンド自体は成功するため、常に完了通知を送信する
+            vscode.commands.executeCommand('tsumiki.slack.postToSlack', message.comment)
+              .then(() => {
+                // 投稿完了をWebViewに通知（成功・キャンセル問わず）
+                if (this._view) {
+                  this._view.webview.postMessage({
+                    command: 'slackPostResult',
+                    success: true
+                  });
+                }
+              })
+              .catch((error) => {
+                console.error('[Tsumiki] Failed to post to Slack:', error);
+                // エラーをWebViewに通知
+                if (this._view) {
+                  this._view.webview.postMessage({
+                    command: 'slackPostResult',
+                    success: false
+                  });
+                }
+              });
+            break;
         }
       },
       undefined,
@@ -217,6 +245,7 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
 
       // 設定を取得
       const displaySettings = this._settingsManager.getDisplaySettings();
+      const dailyComment = this._settingsManager.getSlackDailyComment();
 
       const dataToSend = {
         workTime: stats?.work_time || 0,
@@ -228,6 +257,7 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
         hasMoreFiles,
         totalFiles,
         displaySettings,
+        dailyComment,
       };
       console.log('[Tsumiki] Sending daily data to WebView:', {
         workTime: dataToSend.workTime,
@@ -423,6 +453,20 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
     this._updateTimerState();
     // 日次データも更新（作業時間が変わるため）
     this._sendDailyData();
+  }
+
+  /**
+   * 日次コメントを更新
+   */
+  private async _handleUpdateDailyComment(comment: string) {
+    try {
+      await this._settingsManager.setSlackDailyComment(comment);
+      // データ更新を通知
+      this._sendDailyData();
+    } catch (error) {
+      console.error('[Tsumiki] Failed to update daily comment:', error);
+      vscode.window.showErrorMessage('日次コメントの保存に失敗しました。');
+    }
   }
 
   /**

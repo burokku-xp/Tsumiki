@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { vscode } from '../vscodeApi';
+import SlackPostButton from '../components/SlackPostButton';
 import './SettingsApp.css';
 
 export interface SettingsData {
@@ -15,6 +16,9 @@ export interface SettingsData {
   slack: {
     postItems: string[];
     webhookUrl: string;
+    autoPostEnabled: boolean;
+    autoPostTime: string;
+    userName: string;
   };
 }
 
@@ -47,6 +51,7 @@ const SettingsApp: React.FC = () => {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [webhookUrlInput, setWebhookUrlInput] = useState('');
+  const [userNameInput, setUserNameInput] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -64,12 +69,18 @@ const SettingsApp: React.FC = () => {
         try {
           const message = event.data;
           if (message && message.command === 'updateSettings') {
-            setSettings(message.data);
-            setWebhookUrlInput(message.data.slack.webhookUrl || '');
+            const newSettings = message.data;
+            setSettings(newSettings);
+            // 初回ロード時のみ入力フィールドを初期化
+            if (loading) {
+              setWebhookUrlInput(newSettings.slack?.webhookUrl || '');
+              setUserNameInput(newSettings.slack?.userName || '');
+            }
             setLoading(false);
           }
         } catch (error) {
           console.error('Error handling message:', error);
+          setLoading(false);
         }
       };
 
@@ -167,6 +178,32 @@ const SettingsApp: React.FC = () => {
     }
   };
 
+  const handleSlackUserNameChange = (name: string) => {
+    // ローカルステートのみ更新
+    setUserNameInput(name);
+  };
+
+  const handleSlackUserNameSave = () => {
+    if (!settings) return;
+    
+    // 変更がなければ何もしない
+    if (userNameInput === settings.slack.userName) return;
+
+    // 楽観的更新
+    setSettings({
+      ...settings,
+      slack: {
+        ...settings.slack,
+        userName: userNameInput,
+      },
+    });
+    
+    vscode.postMessage({
+      command: 'updateSlackUserName',
+      name: userNameInput,
+    });
+  };
+
   if (loading) {
     return (
       <div className="settings-app">
@@ -256,6 +293,24 @@ const SettingsApp: React.FC = () => {
             </div>
           ))}
         </div>
+
+        <div className="setting-item" style={{ marginTop: '16px' }}>
+          <label className="setting-label" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+            <div className="setting-content">
+              <span className="setting-name">表示名（Slack投稿用）</span>
+              <span className="setting-description">Slack投稿のヘッダーに表示される名前（空欄の場合はOSのユーザー名）</span>
+            </div>
+            <input
+              type="text"
+              value={userNameInput}
+              onChange={(e) => handleSlackUserNameChange(e.target.value)}
+              onBlur={handleSlackUserNameSave}
+              className="webhook-url-input"
+              style={{ width: '100%', boxSizing: 'border-box' }}
+              placeholder="例: 山田太郎"
+            />
+          </label>
+        </div>
       </div>
 
       <div className="settings-section">
@@ -280,6 +335,80 @@ const SettingsApp: React.FC = () => {
         {settings.slack.webhookUrl && (
           <p className="webhook-url-status">✓ Webhook URLが設定されています</p>
         )}
+      </div>
+
+      <div className="settings-section">
+        <h2 className="section-title">手動投稿</h2>
+        <p className="section-description">本日の記録をSlackに手動で投稿します</p>
+        <div style={{ padding: '10px 0', display: 'flex', justifyContent: 'center' }}>
+          <SlackPostButton />
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h2 className="section-title">自動投稿設定</h2>
+        <p className="section-description">定期的にSlackに自動投稿する設定</p>
+        <div className="settings-list">
+          <div className="setting-item">
+            <label className="setting-label">
+              <input
+                type="checkbox"
+                checked={settings.slack.autoPostEnabled || false}
+                onChange={(e) => {
+                  vscode.postMessage({
+                    command: 'updateSlackAutoPostEnabled',
+                    enabled: e.target.checked,
+                  });
+                  if (settings) {
+                    setSettings({
+                      ...settings,
+                      slack: {
+                        ...settings.slack,
+                        autoPostEnabled: e.target.checked,
+                      },
+                    });
+                  }
+                }}
+                className="setting-checkbox"
+              />
+              <div className="setting-content">
+                <span className="setting-name">自動投稿を有効にする</span>
+                <span className="setting-description">設定した時刻に自動的にSlackに投稿します</span>
+              </div>
+            </label>
+          </div>
+          {settings.slack.autoPostEnabled && (
+            <div className="setting-item">
+              <label className="setting-label">
+                <div className="setting-content">
+                  <span className="setting-name">投稿時刻</span>
+                  <span className="setting-description">自動投稿の時刻を設定します（HH:mm形式、例: 18:00）</span>
+                </div>
+                <input
+                  type="time"
+                  value={settings.slack.autoPostTime || '18:00'}
+                  onChange={(e) => {
+                    const time = e.target.value;
+                    vscode.postMessage({
+                      command: 'updateSlackAutoPostTime',
+                      time,
+                    });
+                    if (settings) {
+                      setSettings({
+                        ...settings,
+                        slack: {
+                          ...settings.slack,
+                          autoPostTime: time,
+                        },
+                      });
+                    }
+                  }}
+                  className="setting-time-input"
+                />
+              </label>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

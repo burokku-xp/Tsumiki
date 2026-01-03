@@ -5,6 +5,7 @@ import TimerControl from './components/TimerControl';
 import StatsSection from './components/StatsSection';
 import DetailsSection from './components/DetailsSection';
 import FileListSection from './components/FileListSection';
+import DailyComment from './components/DailyComment';
 import './App.css';
 
 export interface DailyData {
@@ -25,6 +26,7 @@ export interface DailyData {
     fileList: boolean;
     theme?: string;
   };
+  dailyComment?: string;
 }
 
 const App: React.FC = () => {
@@ -105,6 +107,8 @@ const App: React.FC = () => {
           setTimerState({ isRunning, elapsedTime });
         }}
       />
+      
+      <DailyComment initialComment={data.dailyComment || ''} />
       
       {showStats && (
         <StatsSection

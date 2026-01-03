@@ -1,0 +1,39 @@
+.slack-post-button {
+  background-color: var(--vscode-button-background) !important;
+  color: var(--vscode-button-foreground) !important;
+  border: 1px solid var(--vscode-button-border, transparent) !important;
+  border-radius: 2px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--vscode-font-family);
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 120px;
+  opacity: 1 !important;
+  text-decoration: none;
+  outline-offset: 2px;
+}
+
+.slack-post-button:hover:not(:disabled) {
+  background-color: var(--vscode-button-hoverBackground) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.slack-post-button:active:not(:disabled) {
+  background-color: var(--vscode-button-hoverBackground) !important;
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slack-post-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}

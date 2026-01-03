@@ -162,3 +162,27 @@
 .error {
   color: var(--vscode-errorForeground);
 }
+
+/* New styles for time input */
+.setting-select,
+.setting-time-input {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-dropdown-border);
+  background-color: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.setting-select:focus,
+.setting-time-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.setting-time-input {
+  padding: 3px 8px;
+  min-width: 100px;
+}

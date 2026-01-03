@@ -117,6 +117,27 @@
             "fileList"
           ],
           "description": "Slack投稿に含める項目を選択（複数選択可能）"
+        },
+        "tsumiki.slack.autoPostEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "自動投稿を有効にする（設定した時刻に自動的にSlackに投稿）"
+        },
+        "tsumiki.slack.autoPostTime": {
+          "type": "string",
+          "default": "18:00",
+          "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "自動投稿の時刻（HH:mm形式、例: 18:00）"
+        },
+        "tsumiki.slack.dailyComment": {
+          "type": "string",
+          "default": "",
+          "description": "日次コメント（自動投稿や手動投稿で使用）"
+        },
+        "tsumiki.slack.userName": {
+          "type": "string",
+          "default": "",
+          "description": "Slack投稿時に表示するユーザー名"
         }
       }
     },

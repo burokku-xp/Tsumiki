@@ -68,6 +68,46 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
               await this._handleUpdateWebhookUrl(message.url);
             }
             break;
+          case 'updateSlackAutoPostEnabled':
+            if (typeof message.enabled === 'boolean') {
+              await this._handleUpdateSlackAutoPostEnabled(message.enabled);
+            }
+            break;
+          case 'updateSlackAutoPostTime':
+            if (typeof message.time === 'string') {
+              await this._handleUpdateSlackAutoPostTime(message.time);
+            }
+            break;
+          case 'updateSlackUserName':
+            if (typeof message.name === 'string') {
+              await this._handleUpdateSlackUserName(message.name);
+            }
+            break;
+          case 'postToSlack':
+            // コマンドを実行（コメントを引数として渡す）
+            // 注意: コマンドは非同期で実行されるが、ユーザーがキャンセルした場合などは
+            // コマンド自体は成功するため、常に完了通知を送信する
+            vscode.commands.executeCommand('tsumiki.slack.postToSlack', message.comment)
+              .then(() => {
+                // 投稿完了をWebViewに通知（成功・キャンセル問わず）
+                if (this._view) {
+                  this._view.webview.postMessage({
+                    command: 'slackPostResult',
+                    success: true
+                  });
+                }
+              })
+              .catch((error) => {
+                console.error('[Tsumiki] Failed to post to Slack:', error);
+                // エラーをWebViewに通知
+                if (this._view) {
+                  this._view.webview.postMessage({
+                    command: 'slackPostResult',
+                    success: false
+                  });
+                }
+              });
+            break;
         }
       },
       undefined,
@@ -149,6 +189,47 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * 自動投稿の有効/無効を更新
+   */
+  private async _handleUpdateSlackAutoPostEnabled(enabled: boolean) {
+    try {
+      await this._settingsManager.setSlackAutoPostEnabled(enabled);
+      // 設定変更イベントが発火してタイマーが再起動される
+      vscode.window.showInformationMessage(`自動投稿を${enabled ? '有効' : '無効'}にしました`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`自動投稿設定の更新に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * 自動投稿の時刻を更新
+   */
+  private async _handleUpdateSlackAutoPostTime(time: string) {
+    try {
+      await this._settingsManager.setSlackAutoPostTime(time);
+      // 設定変更イベントが発火してタイマーが再起動される
+      vscode.window.showInformationMessage(`自動投稿時刻を${time}に設定しました`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`自動投稿時刻の更新に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Slack表示名を更新
+   */
+  private async _handleUpdateSlackUserName(name: string) {
+    try {
+      await this._settingsManager.setSlackUserName(name);
+      vscode.window.showInformationMessage('Slack表示名を更新しました');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Slack表示名の更新に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  /**
    * 設定をWebViewに送信
    */
   private async _sendSettings() {
@@ -160,6 +241,9 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
       const displaySettings = this._settingsManager.getDisplaySettings();
       const slackPostItems = this._settingsManager.getSlackPostItems();
       const webhookUrl = await getWebhookUrl(this._context);
+      const autoPostEnabled = this._settingsManager.getSlackAutoPostEnabled();
+      const autoPostTime = this._settingsManager.getSlackAutoPostTime();
+      const userName = this._settingsManager.getSlackUserName();
 
       this._view.webview.postMessage({
         command: 'updateSettings',
@@ -168,6 +252,9 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
           slack: {
             postItems: slackPostItems,
             webhookUrl: webhookUrl || '',
+            autoPostEnabled,
+            autoPostTime,
+            userName,
           },
         },
       });

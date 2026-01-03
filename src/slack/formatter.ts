@@ -24,8 +24,14 @@ function formatWorkTime(seconds: number): string {
  * ユーザー名を取得
  */
 function getUserName(): string {
+  const settingsManager = getSettingsManager();
+  const configuredName = settingsManager.getSlackUserName();
+  
+  if (configuredName && configuredName.trim()) {
+    return configuredName.trim();
+  }
+
   const username = os.userInfo().username;
-  // ユーザー名を日本語風に表示（必要に応じてカスタマイズ可能）
   return username || 'ユーザー';
 }
 
@@ -56,10 +62,12 @@ function formatFileList(fileEdits: Array<{ file_path: string; line_count: number
  * 日次サマリーをSlack形式でフォーマット
  * @param date 日付（YYYY-MM-DD形式、デフォルトは今日）
  * @param postItems 投稿に含める項目（指定がない場合は設定から取得）
+ * @param comment オプションのコメント
  */
 export function formatDailySummaryForSlack(
   date: string = new Date().toISOString().split('T')[0],
-  postItems?: SlackPostItem[]
+  postItems?: SlackPostItem[],
+  comment?: string
 ): string {
   // データベースから日次統計とファイル編集記録を取得（エラーハンドリング付き）
   let stats;
@@ -104,7 +112,9 @@ export function formatDailySummaryForSlack(
   const saveCount = stats?.save_count || 0;
   const fileCount = stats?.file_count || 0;
   const lineChanges = stats?.line_changes || 0;
-  const formattedFileList = formatFileList(fileList);
+  const formattedFileList = formatFileList(
+    fileList.map(f => ({ file_path: f.path, line_count: f.lineCount }))
+  );
 
   // Slack形式のメッセージを構築
   const lines: string[] = [];
@@ -143,6 +153,13 @@ export function formatDailySummaryForSlack(
   if (lines.length === 2) {
     // ヘッダーと区切り線のみの場合
     lines.push('本日のデータはありません');
+  }
+
+  // コメントがある場合は追加
+  if (comment && comment.trim()) {
+    lines.push('');
+    lines.push('💬 コメント:');
+    lines.push(comment.trim());
   }
 
   return lines.join('\n');
