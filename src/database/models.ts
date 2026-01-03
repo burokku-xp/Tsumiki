@@ -305,10 +305,6 @@ export function calculateDailyStats(date: string): DailyStat {
       lineChanges += diff;
     }
   });
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:295',message:'calculateDailyStats lineChanges calculation',data:{fileEditsCount:fileEdits.length,uniqueFilesCount:fileCount,lineChanges,fileEditsByFileSize:fileEditsByFile.size},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
 
   // 言語比率を計算
   const languageCounts: { [key: string]: number } = {};
@@ -343,21 +339,12 @@ export function calculateDailyStats(date: string): DailyStat {
  * 日次統計を保存または更新
  */
 export function saveDailyStats(stats: DailyStat): void {
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:299',message:'saveDailyStats entry',data:{date:stats.date},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const db = getDatabase();
   if (!db) {
     return;
   }
   // 無限再帰を防ぐため、直接データベースをクエリして既存統計を確認
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:304',message:'before direct db query',data:{date:stats.date},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const existing = db.prepare('SELECT * FROM daily_stats WHERE date = ?').get(stats.date) as DailyStat | null;
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:305',message:'after direct db query',data:{date:stats.date,existing:existing?true:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   
   if (existing) {
     // 更新
@@ -394,18 +381,12 @@ export function saveDailyStats(stats: DailyStat): void {
  * 日付で日次統計を取得（存在しない場合は計算して返す）
  */
 export function getDailyStatsByDate(date: string): DailyStat | null {
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:340',message:'getDailyStatsByDate entry',data:{date},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
   const db = getDatabase();
   if (!db) {
     return null;
   }
   
   const result = db.prepare('SELECT * FROM daily_stats WHERE date = ?').get(date) as DailyStat | null;
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:346',message:'after db query',data:{date,found:result?true:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
   
   if (result) {
     return result;
@@ -413,28 +394,13 @@ export function getDailyStatsByDate(date: string): DailyStat | null {
   
   // 存在しない場合は計算
   try {
-    // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:353',message:'before calculateDailyStats',data:{date},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     const calculated = calculateDailyStats(date);
-    // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:354',message:'after calculateDailyStats',data:{date,workTime:calculated.work_time,saveCount:calculated.save_count},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     // アクティブなセッションがある場合もwork_timeが0より大きくなる可能性があるため、
     // work_time > 0 の場合も保存する
     if (calculated.save_count > 0 || calculated.work_time > 0) {
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:357',message:'before saveDailyStats call',data:{date},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       saveDailyStats(calculated);
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:358',message:'after saveDailyStats, before direct db query',data:{date},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       // 無限再帰を防ぐため、保存後に直接データベースから取得
       const saved = db.prepare('SELECT * FROM daily_stats WHERE date = ?').get(date) as DailyStat | null;
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:359',message:'after direct db query',data:{date,found:saved?true:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       return saved || calculated;
     }
     // 統計が存在しない場合でも、計算結果を返す（アクティブなセッションがある場合）
@@ -479,14 +445,8 @@ export function deleteDailyStats(date: string): void {
  * 指定日のデータをリセット（セッション、ファイル編集、日次統計を削除）
  */
 export function resetDailyData(date: string): void {
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:487',message:'resetDailyData entry',data:{date},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const db = getDatabase();
   if (!db) {
-    // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:492',message:'resetDailyData db null',data:{date},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     return;
   }
   
@@ -498,9 +458,6 @@ export function resetDailyData(date: string): void {
   
   // アクティブなセッションを確認
   const activeSession = getActiveSession();
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:503',message:'resetDailyData activeSession check',data:{date,hasActiveSession:!!activeSession,activeSessionId:activeSession?.id,activeSessionStartTime:activeSession?.start_time},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   
   // トランザクションで一括削除
   db.transaction(() => {
@@ -514,8 +471,4 @@ export function resetDailyData(date: string): void {
     // 注意: アクティブなセッション（end_timeがnull）は削除しない
     db.prepare('DELETE FROM sessions WHERE start_time >= ? AND start_time <= ? AND end_time IS NOT NULL').run(startOfDay, endOfDay);
   })();
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:520',message:'resetDailyData completed',data:{date,startOfDay,endOfDay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
 }

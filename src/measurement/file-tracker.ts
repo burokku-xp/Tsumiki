@@ -82,10 +82,6 @@ export class FileTracker {
         savedAt
       );
 
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'file-tracker.ts:93',message:'File edit tracked',data:{filePath,isFirstSave:!latestEdit,initialLineCount,previousLineCount:latestEdit?latestEdit.line_count:null,currentLineCount,lineCountToSave},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-
       console.log('[Tsumiki] File edit tracked:', {
         filePath,
         isFirstSave: !latestEdit,

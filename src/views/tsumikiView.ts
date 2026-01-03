@@ -135,25 +135,13 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
       let stats = null;
       let fileEdits: any[] = [];
       
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'tsumikiView.ts:135',message:'_sendDailyData before getDailyStatsByDate',data:{today},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       try {
         stats = getDailyStatsByDate(today);
-        // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'tsumikiView.ts:139',message:'_sendDailyData after getDailyStatsByDate',data:{today,statsExists:!!stats,workTime:stats?.work_time,saveCount:stats?.save_count},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
         console.log('[Tsumiki] getDailyStatsByDate result:', stats ? `workTime=${stats.work_time}, saveCount=${stats.save_count}` : 'null');
         // statsがnullの場合でも、アクティブなセッションがある可能性があるため再計算
         if (!stats) {
           console.log('[Tsumiki] stats is null, recalculating...');
-          // #region agent log
-          fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'tsumikiView.ts:145',message:'_sendDailyData before calculateDailyStats',data:{today},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           const calculated = calculateDailyStats(today);
-          // #region agent log
-          fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'tsumikiView.ts:148',message:'_sendDailyData after calculateDailyStats',data:{today,workTime:calculated.work_time,saveCount:calculated.save_count},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           console.log('[Tsumiki] calculated stats:', `workTime=${calculated.work_time}, saveCount=${calculated.save_count}`);
           // アクティブなセッションがある場合（work_time > 0）は計算結果を使用
           if (calculated.work_time > 0) {
@@ -441,9 +429,6 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
    * 本日のデータをリセット
    */
   private async _handleResetToday() {
-    // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'tsumikiView.ts:412',message:'_handleResetToday entry',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     const confirm = await vscode.window.showWarningMessage(
       '本日のデータをリセットしますか？この操作は取り消せません。',
       { modal: true },
@@ -459,17 +444,8 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
         const day = String(now.getDate()).padStart(2, '0');
         const today = `${year}-${month}-${day}`;
         
-        // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'tsumikiView.ts:428',message:'before resetDailyData',data:{today},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
         resetDailyData(today);
-        // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'tsumikiView.ts:430',message:'after resetDailyData, before _sendDailyData',data:{today},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
         this._sendDailyData();
-        // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'tsumikiView.ts:432',message:'after _sendDailyData',data:{today},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
         vscode.window.showInformationMessage('本日のデータをリセットしました。');
       } catch (error) {
         console.error('[Tsumiki] Failed to reset today data:', error);
