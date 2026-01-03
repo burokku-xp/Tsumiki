@@ -363,6 +363,13 @@ export function activate(context: vscode.ExtensionContext) {
 
       const disposable = vscode.workspace.onDidSaveTextDocument((document) => {
         try {
+          // ワークスペース外のファイルは除外
+          const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+          if (!workspaceFolder) {
+            console.log('[Tsumiki] File outside workspace, skipping:', document.uri.fsPath);
+            return;
+          }
+
           // アクティブなセッションを取得
           let activeSession = getActiveSession();
           let sessionAutoCreated = false;
