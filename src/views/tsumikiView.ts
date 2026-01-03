@@ -326,7 +326,7 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
             font-family: var(--vscode-font-family);
             font-size: var(--vscode-font-size);
             color: var(--vscode-foreground);
-            background-color: var(--vscode-editor-background);
+            background-color: transparent;
             padding: 0;
             margin: 0;
         }
