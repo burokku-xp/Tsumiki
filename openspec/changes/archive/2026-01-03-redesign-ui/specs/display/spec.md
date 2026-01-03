@@ -12,6 +12,8 @@ The system SHALL display daily summary using a modern, card-based interface with
 - **AND** language ratios are displayed as a unified stacked bar chart
 - **AND** the interface has a clear visual boundary separating it from the workspace
 
+## ADDED Requirements
+
 ### Requirement: Responsive Layout
 The system SHALL adapt its layout to varying sidebar widths without breaking or overlapping elements.
 

@@ -1,10 +1,10 @@
 # UI Design Redesign Proposal
 
-## Summary
+## Why
 The current UI design is functional but lacks visual appeal and distinctiveness. This proposal aims to completely redesign the WebView UI to be more modern, engaging, and aligned with the "Tsumiki" (building blocks) concept.
 **Update:** The design will feature a **bright, modern Orange theme**, improve responsiveness (specifically for narrow sidebars), and clearly define the boundary between the sidebar and workspace.
 
-## Goals
+## What Changes
 - **Modernize Aesthetic**: Move away from standard VS Code lists to a custom, polished card-based interface with an **Orange-based bright theme**.
 - **Enhance Visual Hierarchy**: Make key metrics (Work Time, Save Count) pop out more effectively.
 - **Improve Responsiveness**: Ensure UI elements (especially the Timer) scale correctly and do not collapse when the sidebar is narrow.

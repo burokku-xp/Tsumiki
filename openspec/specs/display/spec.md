@@ -18,20 +18,14 @@ The system SHALL provide a WebView in the primary sidebar (alongside Explorer, S
 - **AND** the daily summary is displayed
 
 ### Requirement: Daily Summary Display
-The system SHALL display daily summary including work time, save count, file count, line changes, language ratios, and edited files list.
+The system SHALL display daily summary using a modern, card-based interface with "building block" motifs and an orange-themed color scheme.
 
 #### Scenario: Daily summary displayed
 - **WHEN** the WebView is opened
-- **THEN** today's work time is displayed
-- **AND** save count and file count are displayed
-- **AND** line changes are displayed with "(参考値)" label
-- **AND** language ratios are displayed as percentages with progress bars
-- **AND** edited files list is displayed with file names and line counts
-
-#### Scenario: No data display
-- **WHEN** there is no data for today
-- **THEN** appropriate message is displayed (e.g., "本日のデータはありません")
-- **AND** the UI remains functional
+- **THEN** today's work time is displayed in a prominent timer card with orange accents
+- **AND** save count, file count, and line changes are displayed in a grid of "stat blocks"
+- **AND** language ratios are displayed as a unified stacked bar chart
+- **AND** the interface has a clear visual boundary separating it from the workspace
 
 ### Requirement: Work Time Display
 The system SHALL display work time in hours and minutes format.
@@ -147,4 +141,17 @@ The system SHALL provide a timer control interface in the side panel WebView for
 - **THEN** the current timer state is requested from the extension host
 - **AND** the timer control displays the correct state
 - **AND** if the timer is running, the elapsed time is calculated and displayed
+
+### Requirement: Responsive Layout
+The system SHALL adapt its layout to varying sidebar widths without breaking or overlapping elements.
+
+#### Scenario: Narrow sidebar
+- **WHEN** the sidebar width is reduced (e.g., < 200px)
+- **THEN** the timer display scales or wraps to remain fully visible
+- **AND** statistic cards reflow into a single column if necessary
+- **AND** text truncates appropriately instead of overflowing
+
+#### Scenario: Wide sidebar
+- **WHEN** the sidebar width is increased
+- **THEN** elements expand or reflow to utilize the available space (e.g., multi-column stats)
 
