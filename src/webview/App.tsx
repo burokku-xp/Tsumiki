@@ -69,7 +69,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="app">
         <div className="loading">読み込み中...</div>
@@ -88,6 +88,11 @@ const App: React.FC = () => {
     fileList: true,
   };
 
+  const showStats = displaySettings.workTime || 
+                    displaySettings.saveCount || 
+                    displaySettings.fileCount || 
+                    displaySettings.lineChanges;
+
   return (
     <div className="app">
       <Header />
@@ -98,30 +103,31 @@ const App: React.FC = () => {
           setTimerState({ isRunning, elapsedTime });
         }}
       />
-      {displaySettings.workTime ||
-      displaySettings.saveCount ||
-      displaySettings.fileCount ? (
+      
+      {showStats && (
         <StatsSection
           workTime={data.workTime}
           saveCount={data.saveCount}
           fileCount={data.fileCount}
+          lineChanges={data.lineChanges}
           displaySettings={displaySettings}
         />
-      ) : null}
-      {displaySettings.lineChanges || displaySettings.languageRatio ? (
+      )}
+
+      {displaySettings.languageRatio && (
         <DetailsSection
-          lineChanges={data.lineChanges}
           languageRatios={data.languageRatios}
           displaySettings={displaySettings}
         />
-      ) : null}
-      {displaySettings.fileList ? (
+      )}
+
+      {displaySettings.fileList && (
         <FileListSection
           fileList={data.fileList}
           hasMoreFiles={data.hasMoreFiles}
           totalFiles={data.totalFiles}
         />
-      ) : null}
+      )}
     </div>
   );
 };

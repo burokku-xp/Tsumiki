@@ -6,13 +6,12 @@ interface LineChangesCardProps {
 
 const LineChangesCard: React.FC<LineChangesCardProps> = ({ lineChanges }) => {
   return (
-    <div className="detail-card">
-      <div className="detail-icon">📝</div>
-      <div className="detail-content">
-        <div className="detail-label">変更行数</div>
-        <div className="detail-value">
-          {lineChanges}行 <span className="reference-label">(参考値)</span>
-        </div>
+    <div className="stat-card">
+      <div className="stat-icon">📝</div>
+      <div className="stat-label">変更行数</div>
+      <div className="stat-value">
+        {lineChanges}
+        <span style={{ fontSize: '10px', opacity: 0.6, marginLeft: '2px', fontWeight: 'normal' }}>行</span>
       </div>
     </div>
   );
