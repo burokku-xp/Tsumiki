@@ -110,9 +110,6 @@ const TimerControl: React.FC<TimerControlProps> = ({
           <div className="timer-time">
             {isRunning ? formatTime(elapsedTime) : formatTimeJapanese(elapsedTime)}
           </div>
-          <div className="timer-status">
-            {isRunning ? '計測中' : '停止中'}
-          </div>
         </div>
         <div className="timer-actions">
           {isRunning ? (
