@@ -84,11 +84,40 @@ const SettingsApp: React.FC = () => {
   }, []);
 
   const handleDisplayToggle = async (key: string, value: boolean) => {
+    // 楽観的更新
+    if (settings) {
+      setSettings({
+        ...settings,
+        display: {
+          ...settings.display,
+          [key]: value,
+        },
+      });
+    }
+
     const configKey = `display.${key}`;
     vscode.postMessage({
       command: 'updateDisplaySetting',
       key: configKey,
       value,
+    });
+  };
+
+  const handleThemeChange = (theme: string) => {
+    // 楽観的更新
+    if (settings) {
+      setSettings({
+        ...settings,
+        display: {
+          ...settings.display,
+          theme,
+        },
+      });
+    }
+
+    vscode.postMessage({
+      command: 'updateTheme',
+      theme,
     });
   };
 
@@ -172,7 +201,7 @@ const SettingsApp: React.FC = () => {
                   name="theme"
                   value={theme.key}
                   checked={settings.display.theme === theme.key}
-                  onChange={(e) => handleThemeChange(e.target.value)}
+                  onChange={() => handleThemeChange(theme.key)}
                   className="setting-checkbox"
                 />
                 <div className="setting-content">
