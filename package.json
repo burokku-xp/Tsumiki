@@ -2,7 +2,8 @@
   "name": "tsumiki",
   "displayName": "Tsumiki",
   "description": "努力の積み上げを可視化するVSCode拡張機能",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "publisher": "tsumiki",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -185,6 +186,7 @@
     "@types/vscode": "^1.80.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.22.0",
     "esbuild": "^0.19.0",
     "glob": "^10.3.0",
     "mocha": "^10.2.0",
@@ -205,6 +207,7 @@
     "watch:webview:settings": "esbuild src/webview/settings/index.tsx --bundle --outfile=out/webview/settings.js --format=iife --platform=browser --jsx=automatic --watch",
     "test": "npm run build && npm run test:compile && node out/test/runTest.js",
     "test:compile": "tsc -p tsconfig.test.json",
-    "test:watch": "npm run test:compile && vscode-test"
+    "test:watch": "npm run test:compile && vscode-test",
+    "package": "vsce package --no-dependencies"
   }
 }
