@@ -20,7 +20,13 @@ description: Archive a deployed OpenSpec change and update specs.
 3. Run `openspec archive <id> --yes` so the CLI moves the change and applies spec updates without prompts (use `--skip-specs` only for tooling-only work).
 4. Review the command output to confirm the target specs were updated and the change landed in `changes/archive/`.
 5. Validate with `openspec validate --strict` and inspect with `openspec show <id>` if anything looks off.
-6. **Branch management**: After archiving, switch back to the `develop` branch.
+6. **Branch management**: After archiving, merge the current branch into remote `develop`:
+   - Ensure the current feature branch (e.g., `feature/<change-id>`) is pushed to the remote repository.
+   - Switch to the `develop` branch and pull the latest changes from remote.
+   - Merge the feature branch into `develop`.
+   - If there are conflicts, resolve them before completing the merge.
+   - Push the merged `develop` branch to the remote repository.
+   - After successful merge, optionally delete the feature branch locally and remotely if it's no longer needed.
 
 **Reference**
 - Use `openspec list` to confirm change IDs before archiving.

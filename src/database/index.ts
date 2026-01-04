@@ -21,9 +21,12 @@ export {
   getFileEditsBySession,
   getFileEditsByDateRange,
   getFileEditsByDate,
+  getLatestFileEdit,
   // 日次統計操作
   calculateDailyStats,
   saveDailyStats,
   getDailyStatsByDate,
   getDailyStatsByDateRange,
+  deleteDailyStats,
+  resetDailyData,
 } from './models';

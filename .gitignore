@@ -15,6 +15,8 @@ pnpm-debug.log*
 out/
 dist/
 *.vsix
+# Allow .vsix files in packages directory
+!packages/**/*.vsix
 
 # TypeScript
 *.tsbuildinfo
@@ -34,6 +36,7 @@ __pycache__/
 
 # IDE
 .vscode-test/
+.vscode-test.js
 .vscode/settings.json
 .vscode/launch.json
 .vscode/tasks.json

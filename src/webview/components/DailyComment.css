@@ -1,0 +1,71 @@
+.daily-comment-section {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.daily-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.daily-comment-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--theme-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.daily-comment-save-button {
+  background-color: transparent;
+  color: var(--theme-primary);
+  border: 1px solid var(--theme-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.daily-comment-save-button:hover:not(:disabled) {
+  background-color: var(--theme-primary);
+  color: var(--theme-text-on-primary);
+}
+
+.daily-comment-save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--vscode-disabledForeground);
+  color: var(--vscode-disabledForeground);
+}
+
+.daily-comment-input {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 8px;
+  font-family: var(--vscode-font-family);
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+  min-height: 60px;
+}
+
+.daily-comment-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.daily-comment-input::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+}

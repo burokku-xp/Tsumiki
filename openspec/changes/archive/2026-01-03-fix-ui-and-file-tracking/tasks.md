@@ -1,0 +1,9 @@
+## 1. Implementation
+- [x] 1.1 設定画面の背景色を `transparent` に変更（`src/views/settingsView.ts`）
+- [x] 1.2 ファイル保存イベントハンドラでワークスペース外のファイルを除外（`src/extension.ts`）
+- [x] 1.3 ハードコードされたHTTP POSTリクエストを削除（`src/database/models.ts`, `src/measurement/file-tracker.ts`, `src/views/tsumikiView.ts`）
+
+## 2. Validation
+- [ ] 2.1 設定画面を開き、背景色が透明であることを確認
+- [ ] 2.2 ワークスペース外のファイル（settings.jsonなど）を編集・保存し、計測対象に含まれないことを確認
+- [ ] 2.3 ワークスペース内のファイルを編集・保存し、正常に計測されることを確認

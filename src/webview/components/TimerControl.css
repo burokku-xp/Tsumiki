@@ -1,0 +1,131 @@
+.timer-control {
+  margin-bottom: var(--spacing-md);
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accent top border like stats cards */
+.timer-control::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--theme-primary);
+}
+
+.timer-control:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--theme-primary);
+}
+
+.timer-control-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap; /* Allow wrapping */
+}
+
+.timer-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 120px; /* Prevent crushing */
+}
+
+.timer-icon {
+  font-size: 24px;
+  opacity: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.timer-time {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-primary);
+  min-width: 90px;
+  letter-spacing: 0.5px;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+}
+
+.timer-status {
+  font-size: 10px;
+  color: var(--theme-text-on-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  padding: 4px 8px;
+  background-color: var(--theme-primary);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.timer-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.timer-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--vscode-font-family);
+  box-shadow: var(--shadow-sm);
+}
+
+.timer-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.timer-button:active {
+  transform: translateY(0);
+}
+
+.timer-button-start {
+  background: var(--theme-primary);
+  color: var(--theme-text-on-primary);
+}
+
+.timer-button-start:hover {
+  background: var(--theme-accent);
+}
+
+.timer-button-stop {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border);
+}
+
+.timer-button-stop:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.button-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.button-text {
+  font-size: 13px;
+  font-weight: 600;
+}

@@ -2,27 +2,212 @@
   "name": "tsumiki",
   "displayName": "Tsumiki",
   "description": "努力の積み上げを可視化するVSCode拡張機能",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "publisher": "tsumiki",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onView:tsumiki.tsumikiView",
+    "onView:tsumiki.tsumikiSettingsView"
+  ],
   "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "tsumiki.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "tsumiki.toggleTimer",
+        "title": "作業時間計測の開始/停止",
+        "icon": "$(clock)"
+      },
+      {
+        "command": "tsumiki.startTimer",
+        "title": "作業時間計測を開始"
+      },
+      {
+        "command": "tsumiki.stopTimer",
+        "title": "作業時間計測を停止"
+      },
+      {
+        "command": "tsumiki.slack.setWebhookUrl",
+        "title": "Slack Webhook URLを設定"
+      },
+      {
+        "command": "tsumiki.slack.removeWebhookUrl",
+        "title": "Slack Webhook URLを削除"
+      },
+      {
+        "command": "tsumiki.slack.postToSlack",
+        "title": "本日の記録をSlackに投稿"
+      },
+      {
+        "command": "tsumiki.openSettings",
+        "title": "設定を開く",
+        "icon": "$(settings-gear)"
+      }
+    ],
+    "configuration": {
+      "title": "Tsumiki",
+      "properties": {
+        "tsumiki.display.workTime": {
+          "type": "boolean",
+          "default": true,
+          "description": "作業時間を表示する"
+        },
+        "tsumiki.display.saveCount": {
+          "type": "boolean",
+          "default": true,
+          "description": "保存回数を表示する"
+        },
+        "tsumiki.display.fileCount": {
+          "type": "boolean",
+          "default": true,
+          "description": "ファイル数を表示する"
+        },
+        "tsumiki.display.lineChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "変更行数を表示する"
+        },
+        "tsumiki.display.languageRatio": {
+          "type": "boolean",
+          "default": true,
+          "description": "言語比率を表示する"
+        },
+        "tsumiki.display.fileList": {
+          "type": "boolean",
+          "default": true,
+          "description": "編集ファイル一覧を表示する"
+        },
+        "tsumiki.appearance.theme": {
+          "type": "string",
+          "enum": [
+            "orange",
+            "blue",
+            "green",
+            "monochrome"
+          ],
+          "default": "orange",
+          "description": "テーマカラーを選択"
+        },
+        "tsumiki.slack.postItems": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "workTime",
+              "saveCount",
+              "fileCount",
+              "lineChanges",
+              "languageRatio",
+              "fileList"
+            ]
+          },
+          "default": [
+            "workTime",
+            "saveCount",
+            "fileCount",
+            "lineChanges",
+            "languageRatio",
+            "fileList"
+          ],
+          "description": "Slack投稿に含める項目を選択（複数選択可能）"
+        },
+        "tsumiki.slack.autoPostEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "自動投稿を有効にする（設定した時刻に自動的にSlackに投稿）"
+        },
+        "tsumiki.slack.autoPostTime": {
+          "type": "string",
+          "default": "18:00",
+          "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "自動投稿の時刻（HH:mm形式、例: 18:00）"
+        },
+        "tsumiki.slack.dailyComment": {
+          "type": "string",
+          "default": "",
+          "description": "日次コメント（自動投稿や手動投稿で使用）"
+        },
+        "tsumiki.slack.userName": {
+          "type": "string",
+          "default": "",
+          "description": "Slack投稿時に表示するユーザー名"
+        },
+        "tsumiki.dataPersistence.resetTime": {
+          "type": "string",
+          "default": "00:00",
+          "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "日次データの自動リセット時刻（HH:mm形式、例: 00:00）"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tsumiki",
+          "title": "Tsumiki",
+          "icon": "$(symbol-class)"
+        }
+      ]
+    },
+    "views": {
+      "tsumiki": [
+        {
+          "id": "tsumikiView",
+          "name": "本日の記録",
+          "type": "webview"
+        },
+        {
+          "id": "tsumikiSettingsView",
+          "name": "設定",
+          "type": "webview"
+        }
+      ]
+    }
+  },
   "dependencies": {
-    "better-sqlite3": "^11.0.0"
+    "better-sqlite3": "^11.0.0",
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
+    "@types/mocha": "^10.0.0",
     "@types/node": "^20.0.0",
+    "@types/node-fetch": "^2.6.13",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "@types/vscode": "^1.80.0",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.22.0",
     "esbuild": "^0.19.0",
+    "glob": "^10.3.0",
+    "mocha": "^10.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "typescript": "^5.3.0"
   },
   "scripts": {
-    "build": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
-    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch"
+    "postinstall": "npm run rebuild-sqlite",
+    "rebuild-sqlite": "npm rebuild better-sqlite3",
+    "build": "npm run build:extension && npm run build:webview && npm run build:webview:settings",
+    "build:extension": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --external:better-sqlite3 --format=cjs --platform=node",
+    "build:webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/webview.js --format=iife --platform=browser --jsx=automatic && cat src/webview/App.css src/webview/components/DailyComment.css src/webview/components/TimerControl.css > out/webview/webview.css",
+    "build:webview:settings": "esbuild src/webview/settings/index.tsx --bundle --outfile=out/webview/settings.js --format=iife --platform=browser --jsx=automatic && cat src/webview/settings/SettingsApp.css src/webview/components/SlackPostButton.css > out/webview/settings.css",
+    "watch": "npm run watch:extension & npm run watch:webview & npm run watch:webview:settings",
+    "watch:extension": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "watch:webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/webview.js --format=iife --platform=browser --jsx=automatic --watch",
+    "watch:webview:settings": "esbuild src/webview/settings/index.tsx --bundle --outfile=out/webview/settings.js --format=iife --platform=browser --jsx=automatic --watch",
+    "test": "npm run build && npm run test:compile && node out/test/runTest.js",
+    "test:compile": "tsc -p tsconfig.test.json",
+    "test:watch": "npm run test:compile && vscode-test",
+    "package": "pnpm run build && rm -rf deploy && mkdir -p deploy && cp -r out deploy/ && cp package.json deploy/ && cp .vscodeignore deploy/.vscodeignore && cp LICENSE deploy/LICENSE.txt && cp README.md deploy/ && cp CHANGELOG.md deploy/ && cp tsconfig.test.json deploy/ && cd deploy && npm install --production --legacy-peer-deps && npm run rebuild-sqlite && (test -d node_modules/better-sqlite3 && echo 'better-sqlite3 found' || echo 'WARNING: better-sqlite3 not found') && (test -f node_modules/better-sqlite3/lib/index.js && echo 'better-sqlite3 lib found' || echo 'WARNING: better-sqlite3 lib not found') && (find node_modules/better-sqlite3 -name '*.node' | head -1 && echo 'better-sqlite3 native binary found' || echo 'WARNING: better-sqlite3 native binary not found') && npx @vscode/vsce package && VERSION=$(node -p \"require('./package.json').version\") && mkdir -p ../packages/v${VERSION} && mv *.vsix ../packages/v${VERSION}/tsumiki-${VERSION}.vsix && echo \"Package created: packages/v${VERSION}/tsumiki-${VERSION}.vsix\" && cd .. && rm -rf deploy"
   }
 }
