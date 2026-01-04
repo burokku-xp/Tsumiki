@@ -489,6 +489,10 @@ export class TsumikiViewProvider implements vscode.WebviewViewProvider {
         const today = `${year}-${month}-${day}`;
         
         resetDailyData(today);
+        
+        // 日次コメントもリセット
+        await this._settingsManager.setSlackDailyComment('');
+        
         this._sendDailyData();
         vscode.window.showInformationMessage('本日のデータをリセットしました。');
       } catch (error) {

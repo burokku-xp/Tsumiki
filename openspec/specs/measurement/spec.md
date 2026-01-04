@@ -84,10 +84,11 @@ The system SHALL track edited files including file name and line count.
 - **AND** the file is included in daily statistics
 
 #### Scenario: Workspace external file exclusion
-- **WHEN** a file outside the workspace (e.g., settings.json, extension configuration files) is saved
+- **WHEN** a file outside the workspace (e.g., settings.json, extension configuration files, files in other workspace folders) is saved
 - **THEN** the file edit is not recorded
 - **AND** the file is excluded from daily statistics
 - **AND** no error is raised
+- **AND** the system continues to track other workspace files normally
 
 ### Requirement: Line Count Calculation
 The system SHALL calculate line changes excluding empty lines and comments.

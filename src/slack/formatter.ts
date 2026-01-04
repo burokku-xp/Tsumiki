@@ -36,6 +36,39 @@ function getUserName(): string {
 }
 
 /**
+ * 日付をフォーマット（YYYY年MM月DD日形式）
+ */
+function formatDate(date: string): string {
+  try {
+    // 日付形式を検証（YYYY-MM-DD形式）
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      console.warn('[Tsumiki] Invalid date format:', date);
+      // デフォルトとして今日の日付を使用
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}年${month}月${day}日`;
+    }
+    
+    const [year, month, day] = date.split('-');
+    // 各要素が有効な値かチェック
+    if (!year || !month || !day) {
+      throw new Error('Invalid date components');
+    }
+    return `${year}年${month}月${day}日`;
+  } catch (error) {
+    console.error('[Tsumiki] Failed to format date:', error);
+    // エラー時は今日の日付を返す
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}年${month}月${day}日`;
+  }
+}
+
+/**
  * ファイル一覧をフォーマット（最大3件表示、残りは「他N件」）
  */
 function formatFileList(fileEdits: Array<{ file_path: string; line_count: number }>): string {
@@ -115,10 +148,21 @@ export function formatDailySummaryForSlack(
   const formattedFileList = formatFileList(
     fileList.map(f => ({ file_path: f.path, line_count: f.lineCount }))
   );
+  
+  // 言語比率をパース
+  let languageRatios: LanguageRatio = {};
+  if (stats?.language_ratios) {
+    try {
+      languageRatios = JSON.parse(stats.language_ratios);
+    } catch (e) {
+      console.error('[Tsumiki] Failed to parse language ratios:', e);
+    }
+  }
 
   // Slack形式のメッセージを構築
   const lines: string[] = [];
   lines.push(`🧱 ${userName}さんの本日の記録`);
+  lines.push(`📅 ${formatDate(date)}`);
   lines.push('━━━━━━━━━━━━━━━━━━━━━');
   
   // 設定で選択された項目のみを追加
@@ -126,21 +170,31 @@ export function formatDailySummaryForSlack(
     lines.push(`⏱️ 作業時間: ${formatWorkTime(workTime)}`);
   }
   
-  if (selectedItems.includes('saveCount') || selectedItems.includes('fileCount')) {
-    const parts: string[] = [];
-    if (selectedItems.includes('saveCount') && saveCount > 0) {
-      parts.push(`${saveCount}回`);
-    }
-    if (selectedItems.includes('fileCount') && fileCount > 0) {
-      parts.push(`${fileCount}ファイル`);
-    }
-    if (parts.length > 0) {
-      lines.push(`💾 保存: ${parts.join(' / ')}`);
-    }
+  // saveCountとfileCountを独立した項目として扱う
+  const saveParts: string[] = [];
+  if (selectedItems.includes('saveCount') && saveCount > 0) {
+    saveParts.push(`${saveCount}回`);
+  }
+  if (selectedItems.includes('fileCount') && fileCount > 0) {
+    saveParts.push(`${fileCount}ファイル`);
+  }
+  if (saveParts.length > 0) {
+    lines.push(`💾 保存: ${saveParts.join(' / ')}`);
   }
   
   if (selectedItems.includes('lineChanges') && lineChanges > 0) {
     lines.push(`📝 変更行数: ${lineChanges}行`);
+  }
+  
+  if (selectedItems.includes('languageRatio') && Object.keys(languageRatios).length > 0) {
+    // 言語比率をパーセンテージ順にソート
+    const sortedRatios = Object.entries(languageRatios)
+      .sort(([, a], [, b]) => b - a)
+      .map(([lang, percent]) => `${lang}: ${percent}%`);
+    
+    lines.push('');
+    lines.push(`🌐 言語比率:`);
+    lines.push(sortedRatios.join(' / '));
   }
   
   if (selectedItems.includes('fileList') && fileList.length > 0) {

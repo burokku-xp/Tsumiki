@@ -138,6 +138,12 @@
           "type": "string",
           "default": "",
           "description": "Slack投稿時に表示するユーザー名"
+        },
+        "tsumiki.dataPersistence.resetTime": {
+          "type": "string",
+          "default": "00:00",
+          "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "日次データの自動リセット時刻（HH:mm形式、例: 00:00）"
         }
       }
     },

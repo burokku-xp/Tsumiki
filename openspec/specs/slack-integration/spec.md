@@ -28,17 +28,27 @@ The system SHALL format daily summary as a Slack message with emojis and structu
 #### Scenario: Slack message formatted
 - **WHEN** daily summary is formatted for Slack
 - **THEN** the message includes user name with 🧱 emoji
-- **AND** work time is displayed with ⏱️ emoji
-- **AND** save count and file count are displayed with 💾 emoji
-- **AND** line changes are displayed with 📝 emoji
-- **AND** edited files list is displayed with 📁 emoji
+- **AND** the message includes the date (e.g., "2026年1月4日")
+- **AND** only items selected in settings are included in the message
+- **AND** work time is displayed with ⏱️ emoji (if selected)
+- **AND** save count is displayed with 💾 emoji (if selected)
+- **AND** file count is displayed with 💾 emoji (if selected)
+- **AND** line changes are displayed with 📝 emoji (if selected)
+- **AND** edited files list is displayed with 📁 emoji (if selected)
 - **AND** the message is formatted with separators (━━━━━━━━━━━━━━━━━━━━━)
+
+#### Scenario: Slack message with selected items only
+- **WHEN** user selects only specific items for Slack posting (e.g., workTime and lineChanges)
+- **THEN** only the selected items are included in the message
+- **AND** unselected items are not included
+- **AND** the message format remains consistent
 
 #### Scenario: Slack message example
 - **WHEN** formatting a message with sample data
 - **THEN** the message matches the expected format:
   ```
   🧱 山田さんの本日の記録
+  2026年1月4日
   ━━━━━━━━━━━━━━━━━━━━━
   ⏱️ 作業時間: 3時間12分
   💾 保存: 24回 / 8ファイル

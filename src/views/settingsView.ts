@@ -112,6 +112,14 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
           case 'resetToday':
             await this._handleResetToday();
             break;
+          case 'updateResetTime':
+            if (typeof message.time === 'string') {
+              await this._handleUpdateResetTime(message.time);
+            }
+            break;
+          case 'syncResetTimeWithAutoPostTime':
+            await this._handleSyncResetTimeWithAutoPostTime();
+            break;
         }
       },
       undefined,
@@ -254,6 +262,9 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
         
         resetDailyData(today);
         
+        // 日次コメントもリセット
+        await this._settingsManager.setSlackDailyComment('');
+        
         // メインのサイドパネルに更新を通知（コマンド経由）
         vscode.commands.executeCommand('tsumiki.refresh');
         
@@ -262,6 +273,35 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
         console.error('[Tsumiki] Failed to reset today data:', error);
         vscode.window.showErrorMessage('データのリセットに失敗しました。');
       }
+    }
+  }
+
+  /**
+   * リセット時間を更新
+   */
+  private async _handleUpdateResetTime(time: string) {
+    try {
+      await this._settingsManager.setResetTime(time);
+      vscode.window.showInformationMessage('リセット時間を更新しました');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`リセット時間の更新に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * リセット時間をSlack自動投稿時間と同期
+   */
+  private async _handleSyncResetTimeWithAutoPostTime() {
+    try {
+      const autoPostTime = this._settingsManager.getSlackAutoPostTime();
+      await this._settingsManager.setResetTime(autoPostTime);
+      vscode.window.showInformationMessage('リセット時間をSlack自動投稿時間と同期しました');
+      // 設定を再送信して反映
+      this._sendSettings();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`リセット時間の同期に失敗しました: ${errorMessage}`);
     }
   }
 
@@ -280,6 +320,7 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
       const autoPostEnabled = this._settingsManager.getSlackAutoPostEnabled();
       const autoPostTime = this._settingsManager.getSlackAutoPostTime();
       const userName = this._settingsManager.getSlackUserName();
+      const resetTime = this._settingsManager.getResetTime();
 
       this._view.webview.postMessage({
         command: 'updateSettings',
@@ -291,6 +332,9 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
             autoPostEnabled,
             autoPostTime,
             userName,
+          },
+          dataPersistence: {
+            resetTime,
           },
         },
       });

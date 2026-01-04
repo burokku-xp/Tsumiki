@@ -296,6 +296,8 @@ export function calculateDailyStats(date: string): DailyStat {
     // 時系列でソート（saved_atの昇順）
     edits.sort((a, b) => a.saved_at - b.saved_at);
     
+    console.log('[Tsumiki] calculateDailyStats: processing file:', filePath, 'edits count:', edits.length);
+    
     // 初回保存時は0行として扱う（初期行数との差分は記録されていないため）
     // 2回目以降は追加行数のみをカウント（削除は0として扱う）
     for (let i = 1; i < edits.length; i++) {
@@ -303,8 +305,17 @@ export function calculateDailyStats(date: string): DailyStat {
       const currentLineCount = edits[i].line_count;
       const diff = Math.max(0, currentLineCount - previousLineCount);
       lineChanges += diff;
+      console.log('[Tsumiki] calculateDailyStats: line change diff:', {
+        filePath,
+        previousLineCount,
+        currentLineCount,
+        diff,
+        totalLineChanges: lineChanges,
+      });
     }
   });
+  
+  console.log('[Tsumiki] calculateDailyStats: total lineChanges:', lineChanges);
   
   // #region agent log
   fetch('http://127.0.0.1:7245/ingest/173bd699-2823-4d26-8d54-d3b7aa8c1ded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'models.ts:295',message:'calculateDailyStats lineChanges calculation',data:{fileEditsCount:fileEdits.length,uniqueFilesCount:fileCount,lineChanges,fileEditsByFileSize:fileEditsByFile.size},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});

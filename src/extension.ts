@@ -6,10 +6,11 @@ import { WorkTimer } from './measurement/timer';
 import { FileTracker } from './measurement/file-tracker';
 import { LineCounter } from './measurement/line-counter';
 import { LanguageDetector } from './measurement/language-detector';
-import { getActiveSession, createSession, getSession } from './database';
+import { getActiveSession, createSession, getSession, resetDailyData, getDailyStatsByDate, getFileEditsByDate, deleteDailyStats } from './database';
 import { setWebhookUrl, removeWebhookUrl, hasWebhookUrl } from './slack/config';
 import { postToSlack } from './slack/webhook';
 import { startAutoPostTimer, stopAutoPostTimer } from './slack/timer';
+import { getSettingsManager } from './settings/config';
 
 // WebViewプロバイダーのインスタンスを保持（リアルタイム更新用）
 let viewProvider: TsumikiViewProvider | undefined;
@@ -21,12 +22,82 @@ let fileTracker: FileTracker | undefined;
 let lineCounter: LineCounter | undefined;
 let languageDetector: LanguageDetector | undefined;
 
+// 自動リセットタイマー
+let resetTimer: NodeJS.Timeout | undefined;
+
 /**
  * WebViewを更新（外部から呼び出し可能）
  */
 export function refreshWebView() {
   if (viewProvider) {
     viewProvider.refresh();
+  }
+}
+
+/**
+ * 自動リセットタイマーを開始
+ */
+function startAutoResetTimer() {
+  // 既存のタイマーをクリア
+  if (resetTimer) {
+    clearInterval(resetTimer);
+  }
+
+  // 1分ごとにチェック
+  resetTimer = setInterval(() => {
+    try {
+      const settingsManager = getSettingsManager();
+      const resetTime = settingsManager.getResetTime();
+      const [resetHour, resetMinute] = resetTime.split(':').map(Number);
+      
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      // 今日の日付を取得（YYYY-MM-DD形式）
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
+      
+      // 設定時刻になったかチェック（1分の誤差を許容）
+      if (currentHour === resetHour && currentMinute === resetMinute) {
+        // 今日のデータが存在するかチェック（既にリセット済みの場合はスキップ）
+        // 日次統計とファイル編集記録の両方をチェック
+        const todayStats = getDailyStatsByDate(today);
+        const todayFileEdits = getFileEditsByDate(today);
+        const hasData = todayStats !== null || todayFileEdits.length > 0;
+        
+        // データが存在しない場合は既にリセット済みと判断
+        if (!hasData) {
+          return;
+        }
+        
+        console.log('[Tsumiki] Auto-reset triggered at', resetTime);
+        resetDailyData(today);
+        
+        // 日次コメントもリセット
+        const settingsManager = getSettingsManager();
+        settingsManager.setSlackDailyComment('').catch((error) => {
+          console.error('[Tsumiki] Failed to reset daily comment:', error);
+        });
+        
+        // WebViewを更新
+        refreshWebView();
+      }
+    } catch (error) {
+      console.error('[Tsumiki] Error in auto-reset timer:', error);
+    }
+  }, 60000); // 1分ごとにチェック
+}
+
+/**
+ * 自動リセットタイマーを停止
+ */
+function stopAutoResetTimer() {
+  if (resetTimer) {
+    clearInterval(resetTimer);
+    resetTimer = undefined;
   }
 }
 
@@ -250,7 +321,7 @@ export function activate(context: vscode.ExtensionContext) {
       context.subscriptions.push(openSettingsCommand);
 
       // Slack投稿コマンド
-      const postToSlackCommand = vscode.commands.registerCommand('tsumiki.slack.postToSlack', async () => {
+      const postToSlackCommand = vscode.commands.registerCommand('tsumiki.slack.postToSlack', async (comment?: string) => {
         try {
           const hasUrl = await hasWebhookUrl(context);
           if (!hasUrl) {
@@ -265,15 +336,24 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          // 投稿確認
-          const confirm = await vscode.window.showInformationMessage(
-            '本日の記録をSlackに投稿しますか？',
-            '投稿',
-            'キャンセル'
-          );
+          // 投稿確認（コメントが指定されていない場合のみ）
+          if (comment === undefined) {
+            const confirm = await vscode.window.showInformationMessage(
+              '本日の記録をSlackに投稿しますか？',
+              '投稿',
+              'キャンセル'
+            );
 
-          if (confirm !== '投稿') {
-            return;
+            if (confirm !== '投稿') {
+              return;
+            }
+          }
+
+          // コメントが指定されていない場合は設定から取得
+          let finalComment = comment;
+          if (finalComment === undefined) {
+            const settingsManager = getSettingsManager();
+            finalComment = settingsManager.getSlackDailyComment();
           }
 
           // 投稿処理（非同期で実行）
@@ -285,7 +365,7 @@ export function activate(context: vscode.ExtensionContext) {
             },
             async (progress) => {
               try {
-                await postToSlack(context);
+                await postToSlack(context, undefined, finalComment);
                 vscode.window.showInformationMessage('Slackに投稿しました。');
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
@@ -316,6 +396,20 @@ export function activate(context: vscode.ExtensionContext) {
     try {
       const disposable = vscode.workspace.onDidSaveTextDocument((document) => {
         try {
+          // ワークスペース外のファイルは記録しない
+          const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+          if (!workspaceFolder) {
+            // デバッグログを出力（問題調査のため）
+            console.log('[Tsumiki] Skipping file save outside workspace:', document.uri.fsPath);
+            return;
+          }
+          
+          // デバッグログ: ワークスペース内のファイルが記録されることを確認
+          console.log('[Tsumiki] File is in workspace:', {
+            filePath: document.uri.fsPath,
+            workspaceFolder: workspaceFolder.uri.fsPath,
+          });
+
           // アクティブなセッションを取得
           let activeSession = getActiveSession();
           let sessionAutoCreated = false;
@@ -362,6 +456,15 @@ export function activate(context: vscode.ExtensionContext) {
           // セッションIDを明示的に渡すことで、自動作成直後でも確実に記録される
           if (fileTracker && activeSession) {
             fileTracker.trackFileEdit(document, lineCount, language, activeSession.id);
+            
+            // ファイル編集記録後、その日の統計データを削除して再計算を促す
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            deleteDailyStats(today);
+            console.log('[Tsumiki] Deleted daily stats for recalculation:', today);
           }
 
           // 最後のアクティビティ時刻を更新（非アクティブセッション監視用）
@@ -415,6 +518,23 @@ export function activate(context: vscode.ExtensionContext) {
       activationError('auto-post timer start', error, false);
     }
 
+    // ステップ7: 自動リセットタイマーを開始
+    console.log('[Tsumiki] Step 7: Starting auto-reset timer...');
+    try {
+      startAutoResetTimer();
+      
+      // 設定変更を監視してタイマーを再起動
+      context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('tsumiki.dataPersistence.resetTime')) {
+          console.log('[Tsumiki] Reset time settings changed, restarting timer...');
+          startAutoResetTimer();
+        }
+      }));
+      console.log('[Tsumiki] Auto-reset timer started');
+    } catch (error) {
+      activationError('auto-reset timer start', error, false);
+    }
+
     console.log('[Tsumiki] Extension activation completed successfully');
   } catch (error) {
     activationError('activation', error, true); // 致命的なエラーは表示する
@@ -435,6 +555,9 @@ export function deactivate() {
   
   // 自動投稿タイマーを停止
   stopAutoPostTimer();
+  
+  // 自動リセットタイマーを停止
+  stopAutoResetTimer();
   
   // リソースを解放
   if (workTimer) {

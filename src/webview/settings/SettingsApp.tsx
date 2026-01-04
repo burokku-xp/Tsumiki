@@ -20,6 +20,9 @@ export interface SettingsData {
     autoPostTime: string;
     userName: string;
   };
+  dataPersistence?: {
+    resetTime: string;
+  };
 }
 
 const DISPLAY_ITEMS = [
@@ -412,6 +415,66 @@ const SettingsApp: React.FC = () => {
                   className="setting-time-input"
                 />
               </label>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h2 className="section-title">自動リセット設定</h2>
+        <p className="section-description">日次データを自動的にリセットする時刻を設定します</p>
+        <div className="settings-list">
+          <div className="setting-item">
+            <label className="setting-label">
+              <div className="setting-content">
+                <span className="setting-name">リセット時刻</span>
+                <span className="setting-description">日次データを自動的にリセットする時刻（HH:mm形式、例: 00:00）</span>
+              </div>
+              <input
+                type="time"
+                value={settings.dataPersistence?.resetTime || '00:00'}
+                onChange={(e) => {
+                  const time = e.target.value;
+                  vscode.postMessage({
+                    command: 'updateResetTime',
+                    time,
+                  });
+                  if (settings) {
+                    setSettings({
+                      ...settings,
+                      dataPersistence: {
+                        ...settings.dataPersistence,
+                        resetTime: time,
+                      },
+                    });
+                  }
+                }}
+                className="setting-time-input"
+              />
+            </label>
+          </div>
+          {settings.slack.autoPostEnabled && (
+            <div className="setting-item" style={{ marginTop: '8px' }}>
+              <button
+                onClick={() => {
+                  vscode.postMessage({
+                    command: 'syncResetTimeWithAutoPostTime',
+                  });
+                  if (settings) {
+                    setSettings({
+                      ...settings,
+                      dataPersistence: {
+                        ...settings.dataPersistence,
+                        resetTime: settings.slack.autoPostTime,
+                      },
+                    });
+                  }
+                }}
+                className="webhook-url-save-button"
+                style={{ width: '100%' }}
+              >
+                Slack自動投稿時間と合わせる
+              </button>
             </div>
           )}
         </div>

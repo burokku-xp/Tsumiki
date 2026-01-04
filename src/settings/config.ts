@@ -22,6 +22,9 @@ export const ConfigKeys = {
     dailyComment: 'tsumiki.slack.dailyComment',
     userName: 'tsumiki.slack.userName',
   },
+  dataPersistence: {
+    resetTime: 'tsumiki.dataPersistence.resetTime',
+  },
 } as const;
 
 /**
@@ -57,6 +60,9 @@ export const DefaultSettings = {
     autoPostTime: '18:00', // デフォルトは18:00
     dailyComment: '', // 日次コメント
     userName: '', // 表示名（空の場合はOSのユーザー名を使用）
+  },
+  dataPersistence: {
+    resetTime: '00:00', // デフォルトは0時
   },
 } as const;
 
@@ -267,6 +273,33 @@ export class SettingsManager {
       'slack.userName',
       DefaultSettings.slack.userName
     );
+  }
+
+  /**
+   * リセット時間（HH:mm形式）を取得
+   */
+  getResetTime(): string {
+    const time = this._config.get<string>(
+      'dataPersistence.resetTime',
+      DefaultSettings.dataPersistence.resetTime
+    );
+    // 形式を検証（HH:mm形式）
+    if (time && /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+      return time;
+    }
+    return DefaultSettings.dataPersistence.resetTime;
+  }
+
+  /**
+   * リセット時間を設定
+   */
+  async setResetTime(time: string): Promise<void> {
+    // 形式を検証（HH:mm形式）
+    if (!/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+      throw new Error('時刻はHH:mm形式で入力してください（例: 00:00）');
+    }
+    await this._config.update('dataPersistence.resetTime', time, vscode.ConfigurationTarget.Global);
+    this._onDidChangeEmitter.fire();
   }
 
   /**
