@@ -111,19 +111,96 @@ export function activate(context: vscode.ExtensionContext) {
     globalStorageUri: context.globalStorageUri?.toString(),
     extensionUri: context.extensionUri?.toString()
   });
+  
+  // better-sqlite3モジュールのロード確認
+  try {
+    console.log('[Tsumiki] Checking better-sqlite3 module availability...');
+    const sqlite3 = require('better-sqlite3');
+    console.log('[Tsumiki] better-sqlite3 module loaded successfully');
+    console.log('[Tsumiki] better-sqlite3 version:', sqlite3.Database?.prototype?.constructor?.name || 'unknown');
+  } catch (moduleError) {
+    const errorMessage = moduleError instanceof Error ? moduleError.message : String(moduleError);
+    console.error('[Tsumiki] CRITICAL: Failed to load better-sqlite3 module:', errorMessage);
+    console.error('[Tsumiki] This is a critical error - database functionality will not work');
+    console.error('[Tsumiki] Node version:', process.version);
+    console.error('[Tsumiki] Platform:', process.platform);
+    console.error('[Tsumiki] Architecture:', process.arch);
+    
+    vscode.window.showErrorMessage(
+      'Tsumiki: データベースモジュールの読み込みに失敗しました。\n\n' +
+      'エラー: ' + errorMessage + '\n\n' +
+      '拡張機能を再インストールしてください。',
+      '詳細を確認'
+    ).then(selection => {
+      if (selection === '詳細を確認') {
+        const outputChannel = vscode.window.createOutputChannel('Tsumiki');
+        outputChannel.appendLine(`[${new Date().toISOString()}] better-sqlite3 module load failed`);
+        outputChannel.appendLine(`Error: ${errorMessage}`);
+        outputChannel.appendLine(`Node version: ${process.version}`);
+        outputChannel.appendLine(`Platform: ${process.platform}`);
+        outputChannel.appendLine(`Architecture: ${process.arch}`);
+        outputChannel.appendLine(`Extension path: ${context.extensionPath}`);
+        outputChannel.show(true);
+      }
+    });
+    
+    // モジュールがロードできない場合は、拡張機能の有効化を続行しない
+    // ただし、他の機能は動作する可能性があるため、警告のみ表示して続行
+    console.warn('[Tsumiki] Continuing activation despite module load failure (limited functionality)');
+  }
 
   // エラーをキャッチして拡張機能が確実に有効化されるようにする
   const activationError = (step: string, error: any, showToUser: boolean = false) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : 'UnknownError';
+    
     console.error(`[Tsumiki] Error in ${step}:`, errorMessage);
+    console.error(`[Tsumiki] Error name:`, errorName);
     if (errorStack) {
       console.error('[Tsumiki] Stack trace:', errorStack);
     }
-    // データベースエラーはユーザーに表示しない（エラーハンドリングにより動作するため）
-    // その他の重要なエラーのみ表示
+    
+    // エラーの詳細情報をログに記録
+    if (error instanceof Error) {
+      console.error('[Tsumiki] Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        cause: (error as any).cause
+      });
+    }
+    
+    // ユーザーに表示するエラーメッセージを構築
     if (showToUser) {
-      vscode.window.showErrorMessage(`Tsumiki: ${step}でエラーが発生しました: ${errorMessage}`);
+      let userMessage = `Tsumiki: ${step}でエラーが発生しました`;
+      if (errorMessage) {
+        userMessage += `\n\nエラー内容: ${errorMessage}`;
+      }
+      
+      // 特定のエラータイプに応じた追加情報
+      if (errorName === 'MODULE_NOT_FOUND' || errorMessage.includes('Cannot find module')) {
+        userMessage += '\n\n原因: 必要なモジュールが見つかりません。拡張機能を再インストールしてください。';
+      } else if (errorMessage.includes('better-sqlite3') || errorMessage.includes('native module')) {
+        userMessage += '\n\n原因: データベースモジュールの読み込みに失敗しました。拡張機能を再インストールしてください。';
+      } else if (errorMessage.includes('ENOENT') || errorMessage.includes('no such file')) {
+        userMessage += '\n\n原因: ファイルまたはディレクトリが見つかりません。';
+      } else if (errorMessage.includes('EACCES') || errorMessage.includes('permission denied')) {
+        userMessage += '\n\n原因: ファイルアクセス権限が不足しています。';
+      }
+      
+      vscode.window.showErrorMessage(userMessage, '詳細を確認').then(selection => {
+        if (selection === '詳細を確認') {
+          const outputChannel = vscode.window.createOutputChannel('Tsumiki');
+          outputChannel.appendLine(`[${new Date().toISOString()}] Error in ${step}`);
+          outputChannel.appendLine(`Error name: ${errorName}`);
+          outputChannel.appendLine(`Error message: ${errorMessage}`);
+          if (errorStack) {
+            outputChannel.appendLine(`Stack trace:\n${errorStack}`);
+          }
+          outputChannel.show(true);
+        }
+      });
     }
   };
 
@@ -536,10 +613,38 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     console.log('[Tsumiki] Extension activation completed successfully');
+    
+    // アクティベーション完了を通知（デバッグ用）
+    try {
+      vscode.window.setStatusBarMessage('Tsumiki: 拡張機能が正常に有効化されました', 3000);
+      console.log('[Tsumiki] Status bar message displayed');
+    } catch (err) {
+      console.error('[Tsumiki] Failed to display status bar message:', err);
+    }
+    
   } catch (error) {
     activationError('activation', error, true); // 致命的なエラーは表示する
     // 致命的なエラーでも拡張機能を有効化し続ける
+    
+    // エラーが発生した場合もステータスバーに表示
+    try {
+      vscode.window.setStatusBarMessage('Tsumiki: 拡張機能の有効化中にエラーが発生しました', 5000);
+    } catch (err) {
+      // ステータスバーメッセージの表示に失敗しても続行
+      console.error('[Tsumiki] Failed to display error status bar message:', err);
+    }
   }
+  
+  // アクティベーションの完了を確認（タイムアウト処理）
+  setTimeout(() => {
+    console.log('[Tsumiki] Activation check: 5 seconds after activation start');
+    if (!viewProvider) {
+      console.warn('[Tsumiki] WARNING: viewProvider is still undefined after 5 seconds');
+    }
+    if (!workTimer) {
+      console.warn('[Tsumiki] WARNING: workTimer is still undefined after 5 seconds');
+    }
+  }, 5000);
 }
 
 /**

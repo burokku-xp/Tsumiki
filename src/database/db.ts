@@ -65,10 +65,31 @@ export function getDatabase(): Database.Database | null {
     // エラーメッセージを詳細に記録
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : 'UnknownError';
+    
     console.error('[Tsumiki] Database initialization failed:', errorMessage);
+    console.error('[Tsumiki] Error name:', errorName);
     if (errorStack) {
       console.error('[Tsumiki] Stack trace:', errorStack);
     }
+    
+    // better-sqlite3のロードエラーの詳細を記録
+    if (errorMessage.includes('better-sqlite3') || errorMessage.includes('Cannot find module') || errorMessage.includes('native module')) {
+      console.error('[Tsumiki] better-sqlite3 module load error detected');
+      console.error('[Tsumiki] Node version:', process.version);
+      console.error('[Tsumiki] Platform:', process.platform);
+      console.error('[Tsumiki] Architecture:', process.arch);
+      console.error('[Tsumiki] Extension path:', extensionContext?.extensionPath || 'unknown');
+      
+      // モジュールの存在確認
+      try {
+        const modulePath = require.resolve('better-sqlite3');
+        console.error('[Tsumiki] better-sqlite3 module path:', modulePath);
+      } catch (resolveError) {
+        console.error('[Tsumiki] better-sqlite3 module not found in require.resolve');
+      }
+    }
+    
     // エラーが発生した場合は、フラグを設定して再度試みないようにする
     dbInstance = null;
     dbInitializationFailed = true;

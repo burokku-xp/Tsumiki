@@ -208,6 +208,6 @@
     "test": "npm run build && npm run test:compile && node out/test/runTest.js",
     "test:compile": "tsc -p tsconfig.test.json",
     "test:watch": "npm run test:compile && vscode-test",
-    "package": "vsce package --no-dependencies"
+    "package": "pnpm run build && rm -rf deploy && mkdir -p deploy && cp -r out deploy/ && cp package.json deploy/ && cp .vscodeignore deploy/.vscodeignore && cp LICENSE deploy/LICENSE.txt && cp README.md deploy/ && cp CHANGELOG.md deploy/ && cp tsconfig.test.json deploy/ && cd deploy && npm install --production --legacy-peer-deps && npm run rebuild-sqlite && (test -d node_modules/better-sqlite3 && echo 'better-sqlite3 found' || echo 'WARNING: better-sqlite3 not found') && (test -f node_modules/better-sqlite3/lib/index.js && echo 'better-sqlite3 lib found' || echo 'WARNING: better-sqlite3 lib not found') && (find node_modules/better-sqlite3 -name '*.node' | head -1 && echo 'better-sqlite3 native binary found' || echo 'WARNING: better-sqlite3 native binary not found') && npx @vscode/vsce package && mv *.vsix .. && cd .. && rm -rf deploy"
   }
 }
