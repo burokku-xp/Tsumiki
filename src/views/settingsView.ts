@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getSettingsManager, type SlackPostItem } from '../settings/config';
 import { setWebhookUrl, getWebhookUrl, removeWebhookUrl } from '../slack/config';
+import { resetDailyData } from '../database';
 
 /**
  * 設定画面のWebViewプロバイダー
@@ -107,6 +108,9 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
                   });
                 }
               });
+            break;
+          case 'resetToday':
+            await this._handleResetToday();
             break;
         }
       },
@@ -226,6 +230,38 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Slack表示名の更新に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * 本日のデータをリセット
+   */
+  private async _handleResetToday() {
+    const confirm = await vscode.window.showWarningMessage(
+      '本日のデータをリセットしますか？この操作は取り消せません。',
+      { modal: true },
+      'リセット',
+      'キャンセル'
+    );
+    
+    if (confirm === 'リセット') {
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
+        
+        resetDailyData(today);
+        
+        // メインのサイドパネルに更新を通知（コマンド経由）
+        vscode.commands.executeCommand('tsumiki.refresh');
+        
+        vscode.window.showInformationMessage('本日のデータをリセットしました。');
+      } catch (error) {
+        console.error('[Tsumiki] Failed to reset today data:', error);
+        vscode.window.showErrorMessage('データのリセットに失敗しました。');
+      }
     }
   }
 

@@ -204,6 +204,12 @@ const SettingsApp: React.FC = () => {
     });
   };
 
+  const handleResetToday = () => {
+    if (window.vscode) {
+      vscode.postMessage({ command: 'resetToday' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="settings-app">
@@ -408,6 +414,20 @@ const SettingsApp: React.FC = () => {
               </label>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h2 className="section-title">データ管理</h2>
+        <p className="section-description">本日の記録データをリセットします</p>
+        <div style={{ padding: '10px 0', display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={handleResetToday}
+            className="reset-button"
+            title="本日のデータをリセット"
+          >
+            🔄 本日のデータをリセット
+          </button>
         </div>
       </div>
     </div>

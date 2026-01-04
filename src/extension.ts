@@ -300,6 +300,12 @@ export function activate(context: vscode.ExtensionContext) {
       });
       context.subscriptions.push(postToSlackCommand);
 
+      // WebViewを更新するコマンド
+      const refreshCommand = vscode.commands.registerCommand('tsumiki.refresh', () => {
+        refreshWebView();
+      });
+      context.subscriptions.push(refreshCommand);
+
       console.log('[Tsumiki] Commands registered successfully');
     } catch (error) {
       activationError('command registration', error, true);
